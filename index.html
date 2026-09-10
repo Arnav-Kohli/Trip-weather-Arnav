@@ -1,0 +1,2745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-store">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Should I Go? — trip weather, decided</title>
+<!-- Inline so the browser stops requesting /favicon.ico and logging a 404.
+     Data URI keeps the page a single self-contained file. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23123b5e'/%3E%3Ccircle cx='16' cy='13' r='6' fill='%23f0c9a0'/%3E%3Crect x='8' y='21' width='16' height='2.6' rx='1.3' fill='%232f7fb5'/%3E%3C/svg%3E">
+<meta name="description" content="Enter a city and your dates. Get a verdict for each day and one packing list — not a wall of numbers.">
+<meta property="og:title" content="Should I Go? — trip weather, decided">
+<meta property="og:description" content="A verdict for each day and one packing list — not a wall of numbers.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Should I Go? — trip weather, decided">
+<meta name="twitter:description" content="A verdict for each day and one packing list — not a wall of numbers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#0B0D10; --ink-2:#5A6270; --ink-3:#8B93A1;
+  --paper:#F2F0EC; --card:#FFFFFF; --rule:#E0DDD6;
+  --good:#1F7A4C; --good-bg:#E4F2E9;
+  --fine:#2C6E9B; --fine-bg:#E3EFF7;
+  --caution:#B26A12; --caution-bg:#FBEEDC;
+  --hostile:#B02E28; --hostile-bg:#FAE6E4;
+  --accent:#12304A;
+  --shadow:0 1px 2px rgba(11,13,16,.05), 0 12px 32px rgba(11,13,16,.07);
+  --r:14px;
+}
+/* ── ONE VISUAL WORLD ──────────────────────────────────────────────────────
+   The sky canvas is a fixed dark palette in every theme — it is a night-ish sky
+   whatever the OS is set to. Following prefers-color-scheme therefore produced
+   an incoherent page on a light Mac: a dark sky behind WHITE panels with black
+   text, which is why the city suggestions were reading black. This design
+   commits to dark, so the palette is unconditional and `color-scheme` tells the
+   browser to render form controls to match. */
+:root{
+  color-scheme:dark;
+  --ink:#F0EEE9; --ink-2:#A8AFBC; --ink-3:#767D8B;
+  --paper:#0C0E11; --card:#14171C; --rule:#242932;
+  --good:#5FD096; --good-bg:#12291F;
+  --fine:#6FB6E6; --fine-bg:#12242F;
+  --caution:#E5A857; --caution-bg:#2C2214;
+  --hostile:#EF7C74; --hostile-bg:#2E1917;
+  --accent:#9CC4E4;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.4);
+}
+
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ink:#F0EEE9; --ink-2:#A8AFBC; --ink-3:#767D8B;
+  --paper:#0C0E11; --card:#14171C; --rule:#242932;
+  --good:#5FD096; --good-bg:#12291F;
+  --fine:#6FB6E6; --fine-bg:#12242F;
+  --caution:#E5A857; --caution-bg:#2C2214;
+  --hostile:#EF7C74; --hostile-bg:#2E1917;
+  --accent:#9CC4E4;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.4);
+}}
+:root[data-theme="dark"]{
+  --ink:#F0EEE9; --ink-2:#A8AFBC; --ink-3:#767D8B;
+  --paper:#0C0E11; --card:#14171C; --rule:#242932;
+  --good:#5FD096; --good-bg:#12291F;
+  --fine:#6FB6E6; --fine-bg:#12242F;
+  --caution:#E5A857; --caution-bg:#2C2214;
+  --hostile:#EF7C74; --hostile-bg:#2E1917;
+  --accent:#9CC4E4;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.4);
+}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block}
+.wrap{position:relative;z-index:1}
+#out{position:relative;z-index:1}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Inter Tight",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.wrap{max-width:940px;margin:0 auto;padding:clamp(20px,5vw,56px) clamp(16px,4vw,28px) 80px}
+
+/* ---------- masthead ---------- */
+.mast{margin-bottom:clamp(22px,4vw,36px);color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.45)}
+.mast .kicker{color:rgba(255,255,255,.72)}
+.mast .sub{color:rgba(255,255,255,.86)}
+.mast h1 em{color:#FFD9A8}
+.kicker{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:12px
+}
+h1{
+  font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(38px,8.5vw,68px);line-height:.98;letter-spacing:-.02em;margin:0;
+  text-wrap:balance;
+}
+h1 em{font-style:italic;color:var(--accent)}
+.sub{color:var(--ink-2);margin-top:16px;max-width:46ch;font-size:clamp(15px,2.4vw,17.5px);line-height:1.55}
+
+/* ---------- form ---------- */
+/* z-index 30 + a stacking context of its own. The preset cards below use
+   backdrop-filter, which makes each one a stacking context, and they come later
+   in the DOM — so without this the suggestions dropdown painted UNDERNEATH them
+   no matter how high its own z-index went. */
+form{
+  position:relative;z-index:30;
+  background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(16px);border:1px solid var(--rule);border-radius:var(--r);
+  padding:clamp(14px,3vw,20px);box-shadow:var(--shadow);margin-top:clamp(20px,4vw,30px);
+  display:grid;gap:12px;grid-template-columns:1fr;
+}
+@media(min-width:720px){form{grid-template-columns:2fr 1fr 1fr auto;align-items:end}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+label{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3)
+}
+input{
+  font:inherit;font-size:16px;color:var(--ink);background:transparent;
+  border:1px solid var(--rule);border-radius:9px;padding:11px 12px;width:100%;
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+button{
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;
+  background:var(--ink);color:var(--paper);border:0;border-radius:9px;
+  padding:12px 22px;white-space:nowrap;transition:transform .12s, opacity .15s;
+}
+button:hover{transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- typeahead ---------- */
+.combo{position:relative}
+#ac{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;margin:0;padding:6px;
+  list-style:none;max-height:290px;overflow-y:auto;
+  background:color-mix(in srgb,var(--card) 96%,transparent);backdrop-filter:blur(18px);
+  border:1px solid var(--rule);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.28);
+}
+#ac li{
+  padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;
+  justify-content:space-between;gap:12px;align-items:baseline;line-height:1.35;
+}
+#ac li[aria-selected="true"],#ac li:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+/* Pinned to a literal, not a token: the dropdown always sits on a dark card,
+   and this is the one label that was reading black. */
+#ac li{color:#F2F6FB}
+#ac li b{font-weight:600;font-size:15px;color:#F2F6FB !important}
+#ac li em{color:#AFC0D4 !important}
+#ac em{font-style:normal;color:var(--ink-2);font-size:13.5px;display:block}
+#ac span{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+#ac .hint{padding:8px 12px;color:var(--ink-3);font-family:"JetBrains Mono",monospace;font-size:11px;
+  letter-spacing:.08em;text-transform:uppercase;cursor:default}
+#ac .hint:hover{background:transparent}
+
+/* ---------- shared panel ---------- */
+.panel{
+  background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(14px);border:1px solid var(--rule);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:clamp(18px,4vw,30px);margin-top:22px
+}
+
+/* ---------- empty state ---------- */
+.empty{margin-top:26px;display:grid;gap:14px;grid-template-columns:1fr}
+/* Three columns needed 900px, not 640: at 760 the cards fell to 225px and the
+   date line was being cut off horizontally. */
+@media(min-width:560px){.empty{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.empty{grid-template-columns:repeat(3,1fr)}}
+.ex{
+  position:relative;overflow:hidden;isolation:isolate;
+  background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(14px) saturate(1.2);
+  border:1px solid var(--rule);border-radius:18px;
+  padding:20px;text-align:left;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 18px 44px -26px rgba(0,0,0,.5);
+  transition:transform .16s cubic-bezier(.2,.7,.3,1), border-color .16s;
+}
+.ex::before{
+  content:"";position:absolute;z-index:-1;inset:auto -30% -60% -10%;height:120%;
+  background:radial-gradient(50% 60% at 30% 100%,var(--accent),transparent 70%);
+  opacity:.16;transition:opacity .2s;
+}
+@media(hover:hover){
+  .ex:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+  .ex:hover::before{opacity:.3}
+}
+/* The global button rule sets color:var(--paper) for the primary CTA — which is
+   near-BLACK in this palette. Any button that is not that CTA has to take it
+   back, or its text vanishes into the dark card. This is what made the
+   suggested city names invisible. */
+.ex{color:var(--ink)}
+.ex b{display:block;font-size:16px;margin-bottom:3px;color:var(--ink)}
+.ex span{color:var(--ink-3);font-size:13px;font-family:"JetBrains Mono",monospace;
+  display:block;overflow-wrap:anywhere;line-height:1.35}
+.ex em{display:block;margin-top:9px;padding-top:8px;border-top:1px solid var(--rule);
+  white-space:normal;overflow-wrap:anywhere;
+  font-style:normal;font-size:12px;letter-spacing:.04em;color:var(--ink-3);opacity:.8;
+  font-family:"JetBrains Mono",monospace}
+.empty-lead{margin:26px 0 0;color:var(--ink-2);font-size:clamp(14.5px,2.2vw,16.5px);
+  line-height:1.55;max-width:54ch}
+
+/* ---------- verdict banner ---------- */
+.headline{
+  position:relative;overflow:hidden;isolation:isolate;
+  backdrop-filter:blur(20px) saturate(1.3);
+  border-radius:22px;padding:clamp(26px,5vw,42px) clamp(22px,4.4vw,40px);margin-top:24px;
+  border:1px solid transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 26px 70px -28px rgba(0,0,0,.55);
+}
+/* A soft bloom in the verdict's own colour, thrown from the top-left. Gives the
+   panel depth without putting anything on top of the sentence. */
+.headline::before{
+  content:"";position:absolute;z-index:-1;inset:-40% -10% auto -25%;height:150%;
+  background:radial-gradient(60% 70% at 22% 18%,currentColor,transparent 68%);
+  opacity:.20;pointer-events:none;
+}
+/* Hairline across the top edge — the detail that reads as considered. */
+.headline::after{
+  content:"";position:absolute;top:0;left:clamp(22px,4.4vw,40px);right:clamp(22px,4.4vw,40px);height:1px;
+  background:linear-gradient(90deg,transparent,currentColor,transparent);opacity:.4;
+}
+.headline .where{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;opacity:.95;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap
+}
+.headline p{
+  margin:0;font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(24px,4.1vw,38px);line-height:1.12;letter-spacing:-.018em;text-wrap:balance;
+  max-width:24ch;
+}
+/* Trip-shape advice. Deliberately half the size of the verdict and on the body
+   face, so it reads as a footnote to the judgement, never a competing headline. */
+/* THE MOVE. This is the most useful sentence on the page, and it must not win
+   the page by shouting — the strip is 76px of colour and this is one line of
+   text. It earns attention by being set apart, not by being big: a hairline
+   rule and a mono label above it, indented off the verdict's own left edge.
+   Half the verdict's size, full ink contrast, no colour of its own. */
+.move{
+  margin:22px 0 0;padding-left:16px;position:relative;
+  font-family:"Inter Tight",sans-serif;font-size:clamp(15px,2.3vw,18px);
+  font-weight:600;line-height:1.42;letter-spacing:-.006em;max-width:44ch;color:var(--ink);
+}
+.move::before{
+  content:"";position:absolute;left:0;top:.42em;bottom:.28em;width:2px;border-radius:2px;
+  background:currentColor;opacity:.32;
+}
+.move::after{
+  content:"THE MOVE";position:absolute;left:16px;top:-16px;
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.16em;
+  font-weight:500;opacity:.5;
+}
+.tone-good{background:linear-gradient(152deg,color-mix(in srgb,var(--good-bg) 94%,transparent),color-mix(in srgb,var(--good-bg) 62%,transparent));border-color:color-mix(in srgb,var(--good) 34%,transparent);color:var(--good)}
+.tone-fine,.tone-mixed{background:linear-gradient(152deg,color-mix(in srgb,var(--fine-bg) 94%,transparent),color-mix(in srgb,var(--fine-bg) 62%,transparent));border-color:color-mix(in srgb,var(--fine) 34%,transparent);color:var(--fine)}
+.tone-caution{background:linear-gradient(152deg,color-mix(in srgb,var(--caution-bg) 94%,transparent),color-mix(in srgb,var(--caution-bg) 62%,transparent));border-color:color-mix(in srgb,var(--caution) 36%,transparent);color:var(--caution)}
+.tone-hostile{background:linear-gradient(152deg,color-mix(in srgb,var(--hostile-bg) 94%,transparent),color-mix(in srgb,var(--hostile-bg) 62%,transparent));border-color:color-mix(in srgb,var(--hostile) 36%,transparent);color:var(--hostile)}
+/* The verdict must stay the most legible thing on the panel, so it does NOT
+   inherit the tone colour — only the panel's glow and edges do. */
+.headline p,.move{color:var(--ink)}
+
+/* ============================================================================
+   THE REVEAL
+   Order is the point: sky, then the shape of the trip, then the sentence that
+   explains it, then the detail. The headline is the punchline, so nothing
+   detailed may land before it. One timeline drives all of it.
+   ========================================================================== */
+.stage{opacity:0}
+.stage.in{animation:stageIn .62s cubic-bezier(.16,.84,.28,1) both}
+@keyframes stageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.headline.stage.in{animation:headlineIn .78s cubic-bezier(.16,.84,.28,1) both}
+@keyframes headlineIn{
+  from{opacity:0;transform:translateY(18px) scale(.985);filter:blur(6px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
+
+/* segments draw from the baseline up, one after another */
+.seg{opacity:0;transform-origin:50% 100%}
+.strip.in .seg{animation:segIn .46s cubic-bezier(.16,.84,.28,1) both}
+@keyframes segIn{from{opacity:0;transform:scaleY(.22)}to{opacity:1;transform:none}}
+
+/* the worst day announces itself once, without a word */
+@keyframes worst{
+  0%{box-shadow:inset 0 0 0 0 currentColor;filter:brightness(1)}
+  38%{box-shadow:inset 0 0 0 2.5px currentColor;filter:brightness(1.16)}
+  100%{box-shadow:inset 0 0 0 0 currentColor;filter:brightness(1)}
+}
+.seg.worst{animation:segIn .46s cubic-bezier(.16,.84,.28,1) both, worst 1.15s ease-out .1s 1}
+
+/* detail stays quieter than the verdict */
+.curve,.pack-panel,.section-head{opacity:0}
+.curve.in,.pack-panel.in,.section-head.in{animation:quietIn .5s ease-out both}
+@keyframes quietIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+@media(prefers-reduced-motion:reduce){
+  .stage,.stage.in,.headline.stage.in,.seg,.strip.in .seg,.seg.worst,
+  .curve,.curve.in,.pack-panel,.pack-panel.in,.section-head,.section-head.in{
+    animation:none!important;opacity:1!important;transform:none!important;filter:none!important
+  }
+}
+
+/* ---------- trip strip: the shape of the trip, before any reading ---------- */
+.strip{display:flex;gap:2px;margin-top:18px;height:76px;border-radius:16px;overflow:hidden;
+  border:1px solid var(--rule);background:var(--card);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 16px 40px -24px rgba(0,0,0,.55)}
+.seg{flex:1;position:relative;cursor:pointer;border:0;padding:0;transition:filter .22s ease;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;padding-bottom:7px;min-width:0}
+.seg:focus-visible{filter:brightness(1.12);outline:2px solid var(--accent);outline-offset:-2px}
+/* Widening on hover animates flex-basis, which relayouts all 14 siblings every
+   frame. Worth it on a desktop pointer; never runs on touch, where it would be
+   pure jank for an interaction that cannot even happen. */
+@media(hover:hover) and (pointer:fine){
+  /* Growing a flex item relayouts its siblings every frame, so it has to be
+     unhurried or it reads as a stutter. Longer, softer, and flagged to the
+     compositor. */
+  .seg{transition:flex-grow .42s cubic-bezier(.22,.61,.36,1),filter .22s ease;will-change:flex-grow}
+  .seg:hover,.seg:focus-visible{flex-grow:1.85;filter:brightness(1.08);outline:none}
+}
+/* A 14-day strip on a 360px screen gives each day 24px — below any usable tap
+   target. Let the strip scroll inside itself rather than shrinking further; the
+   page body still never scrolls sideways. */
+@media(max-width:560px){
+  .strip{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .strip::-webkit-scrollbar{display:none}
+  .seg{min-width:46px;flex:0 0 auto}
+}
+.seg small{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.06em;
+  text-transform:uppercase;opacity:.9;white-space:nowrap}
+.seg strong{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.seg::before{content:"";position:absolute;inset:0;opacity:.55;
+  background:linear-gradient(180deg,currentColor,transparent 82%);pointer-events:none}
+.s-good{background:var(--good-bg);color:var(--good)}
+.s-fine{background:var(--fine-bg);color:var(--fine)}
+.s-caution{background:var(--caution-bg);color:var(--caution)}
+.s-hostile{background:var(--hostile-bg);color:var(--hostile)}
+.s-unknown{background:var(--rule);color:var(--ink-3)}
+.seg small,.seg strong{position:relative;z-index:1}
+/* the suggested outdoor day — a hairline, not a badge */
+.seg.pick::after{content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  width:16px;height:2px;border-radius:2px;background:currentColor;opacity:.85}
+
+/* ---------- feels-like curve ---------- */
+/* The feels-like curve. It was a 96px sliver wedged under the strip and read as
+   a footnote; at this size the shape of the week is legible at a glance, which
+   is the only reason it exists. */
+.curve{margin-top:16px;background:color-mix(in srgb,var(--card) 82%,transparent);
+  backdrop-filter:blur(14px);border:1px solid var(--rule);border-radius:18px;
+  padding:18px 20px 16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 18px 44px -30px rgba(0,0,0,.5)}
+.cwrap{position:relative;margin-top:10px}
+.curve svg{display:block;width:100%;height:clamp(104px,13vh,132px);overflow:visible}
+@media(min-width:1100px){
+  .curve{width:min(1080px,90vw);margin-inline:calc(50% - min(1080px,90vw) / 2)}
+  .curve svg{height:clamp(118px,14vh,148px)}
+}
+
+/* The line draws itself once, left to right, when the panel arrives. pathLength
+   normalises the path to 1 so the dash maths does not care how long it is. */
+.cline{stroke-dasharray:1;stroke-dashoffset:1}
+.curve.in .cline{animation:cdraw 1.05s cubic-bezier(.35,0,.15,1) .05s forwards}
+@keyframes cdraw{to{stroke-dashoffset:0}}
+.carea{opacity:0}
+.curve.in .carea{animation:cfade .7s ease-out .55s forwards}
+@keyframes cfade{to{opacity:1}}
+
+/* Points are HTML, so they stay round however wide the panel gets. */
+.cdot{
+  position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;
+  background:var(--c);box-shadow:0 0 0 2.5px var(--card);
+  opacity:0;transform:scale(.3);
+}
+.curve.in .cdot{animation:cpop .42s cubic-bezier(.2,1.5,.4,1) forwards;
+  animation-delay:calc(.42s + var(--i) * .07s)}
+@keyframes cpop{to{opacity:1;transform:scale(1)}}
+/* The travelling light. A short dash chasing itself along the same path — the
+   panel is never dead, and nothing jumps, because it is one continuous offset.
+   It only starts after the line has finished drawing itself. */
+.cspark{stroke-dasharray:.055 .945;stroke-dashoffset:1;opacity:0}
+.curve.in .cspark{animation:csparkIn .5s ease-out 1.1s forwards, crun 5.2s linear 1.1s infinite}
+@keyframes csparkIn{to{opacity:.85}}
+@keyframes crun{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+/* the warmest day keeps a slow pulse, so the panel is never quite static */
+.curve.in .cdot:last-child{animation:cpop .42s cubic-bezier(.2,1.5,.4,1) forwards,
+  cbeat 2.8s ease-in-out 1.6s infinite}
+@keyframes cbeat{0%,100%{box-shadow:0 0 0 2.5px var(--card)}
+  50%{box-shadow:0 0 0 2.5px var(--card),0 0 0 7px color-mix(in srgb,var(--c) 26%,transparent)}}
+
+@media(prefers-reduced-motion:reduce){
+  .cline{stroke-dashoffset:0}
+  .carea{opacity:1}
+  .cspark{display:none}
+  .cdot{opacity:1;transform:none}
+  .curve.in .cline,.curve.in .carea,.curve.in .cdot,.curve.in .cspark{animation:none}
+}
+.curve .cap{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+
+/* ---------- day cards ---------- */
+/* ══ THE RAIL ═════════════════════════════════════════════════════════════
+   A stack of five near-identical slabs told you nothing about the shape of the
+   week. This is a horizontal snap rail: one day in focus, its neighbours
+   visibly smaller either side, swipeable by thumb.
+
+   --cardw drives everything. Phone: one card with ~12% of the next peeking, so
+   it is obviously scrollable without a hint. Desktop: about 2.5 cards.        */
+.rail{position:relative;margin-top:16px}
+.days{
+  --cardw:84vw;--gap:14px;
+  display:flex;gap:var(--gap);align-items:stretch;
+  overflow-x:auto;overflow-y:visible;
+  scroll-snap-type:x mandatory;
+  /* room for the focused card to scale up and for its shadow, without clipping */
+  padding-block:14px 20px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+.days::-webkit-scrollbar{display:none}
+/* Flex spacers, not padding: Chrome has historically dropped the end padding of
+   a flex scroll container, which would stop the LAST day ever centring.
+   The `- var(--gap)` matters: the spacer is itself a flex item, so the gap sits
+   BETWEEN it and the first card. Without subtracting it every card settles one
+   gap-width off centre — 16px of permanent drift. */
+.days::before,.days::after{content:"";flex:0 0 calc(50% - var(--cardw) / 2 - var(--gap))}
+.days:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:20px}
+@media(min-width:720px){.days{--cardw:340px;--gap:18px}}
+@media(min-width:1100px){.days{--cardw:380px;--gap:20px}}
+@media(min-width:1500px){.days{--cardw:420px}}
+
+/* The rail is the one thing worth giving the whole screen to. Everything else
+   stays inside the 940px reading column — text at that width is comfortable and
+   at 1440px the rail would otherwise sit as a narrow ribbon in open space. */
+@media(min-width:1100px){
+  .rail{width:min(1300px,94vw);margin-inline:calc(50% - min(1300px,94vw) / 2)}
+}
+
+.day{
+  flex:0 0 var(--cardw);
+  scroll-snap-align:center;
+  opacity:0;                        /* the reveal turns this on */
+  min-height:clamp(400px,58vh,520px);
+  display:flex;
+}
+/* The visual card. Portrait, not letterbox. */
+.day-card{
+  position:relative;overflow:hidden;isolation:isolate;flex:1;
+  background:color-mix(in srgb,var(--card) 74%,transparent);backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid var(--rule);border-radius:22px;padding:26px 26px 24px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 22px 54px -28px rgba(0,0,0,.55);
+  display:grid;gap:14px;align-content:space-between;grid-template-rows:auto auto 1fr auto;
+  transform-origin:50% 50%;
+}
+.day-card::before{
+  content:"";position:absolute;z-index:-1;inset:0;opacity:.26;pointer-events:none;
+  background:linear-gradient(118deg,currentColor 0%,transparent 40%);
+}
+.day-ghost{
+  position:absolute;z-index:-1;right:-6px;bottom:-30px;pointer-events:none;
+  font-family:"Instrument Serif",Georgia,serif;font-size:190px;line-height:1;
+  opacity:.07;letter-spacing:-.04em;user-select:none;
+}
+
+/* ── focus effect ──
+   The card at the centre of the rail is full size; its neighbours shrink and
+   dim. Done with the `scale` property (not `transform`) so the entrance
+   animation, which uses `transform`, composes with it instead of cancelling it. */
+@keyframes dayFocus{
+  0%  {scale:.86;opacity:.42}
+  50% {scale:1;  opacity:1}
+  100%{scale:.86;opacity:.42}
+}
+@supports (animation-timeline: view(inline)){
+  .day-card{
+    animation:dayFocus linear both;
+    animation-timeline:view(inline);
+    animation-range:entry 0% exit 100%;
+  }
+}
+/* Safari and Firefox have no scroll-driven animations yet. An
+   IntersectionObserver toggles .centred instead, driving the same look through
+   a transition. Without this branch those browsers would show flat cards —
+   never invisible ones. */
+@supports not (animation-timeline: view(inline)){
+  .day-card{scale:.88;opacity:.5;transition:scale .26s cubic-bezier(.2,.7,.3,1),opacity .26s}
+  .day.centred .day-card{scale:1;opacity:1}
+}
+
+/* entrance: staggered in from the right, after the headline has landed */
+.day.in{animation:railIn .5s cubic-bezier(.16,.84,.28,1) both}
+@keyframes railIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* Tapped from the strip — a HELD glow, so the card and the sky are visibly the
+   same thing. */
+.day.lit .day-card{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 60%,transparent),
+  inset 0 1px 0 rgba(255,255,255,.07), 0 18px 44px -26px rgba(0,0,0,.5)}
+
+@media(prefers-reduced-motion:reduce){
+  .day{animation:none;opacity:1}
+  .day.in{animation:none}
+  .day-card{animation:none;scale:1;opacity:1;transition:none}
+  .days{scroll-snap-type:none;scroll-behavior:auto}
+}
+
+/* currentColor drives the wash, the ghost letter and the hover edge at once. */
+.day.b-good{color:var(--good)}
+.day.b-fine{color:var(--fine)}
+.day.b-caution{color:var(--caution)}
+.day.b-hostile{color:var(--hostile)}
+.day.b-unknown{color:var(--ink-3)}
+/* …but the words themselves stay ink, never tinted. */
+.day .verdict{color:var(--ink)}
+.day .also{color:var(--ink-2)}
+
+
+
+.day-top{display:flex;justify-content:space-between;gap:14px;align-items:baseline;flex-wrap:wrap}
+.date{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.chip{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap
+}
+.c-good{background:var(--good-bg);color:var(--good)}
+.c-fine{background:var(--fine-bg);color:var(--fine)}
+.c-caution{background:var(--caution-bg);color:var(--caution)}
+.c-hostile{background:var(--hostile-bg);color:var(--hostile)}
+.c-unknown{background:var(--rule);color:var(--ink-3)}
+.verdict{font-size:clamp(17px,1.7vw,21px);font-weight:600;line-height:1.32;letter-spacing:-.011em;text-wrap:balance;margin:0}
+.also{margin:0;color:var(--ink-2);font-size:14.5px}
+.also li{margin-top:3px}
+/* ---- the anchor number ---- */
+.anchor{display:flex;align-items:baseline;gap:12px;margin-top:2px}
+.feels{
+  font-family:"Instrument Serif",Georgia,serif;font-size:clamp(52px,5.6vw,66px);line-height:.86;
+  letter-spacing:-.03em;color:var(--ink);font-variant-numeric:tabular-nums;
+}
+.anchor-side{display:flex;flex-direction:column;gap:3px;padding-bottom:4px}
+.anchor-lab{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-3)}
+.anchor-low{font-size:12.5px;color:var(--ink-2)}
+
+/* ---- gauges ----
+   A label, a value, and a bar on a fixed scale. The bar takes the day's colour
+   only once it crosses that signal's threshold, so a glance finds the problem
+   without reading a digit. Deliberately quieter than the verdict. */
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:13px 18px;
+  padding-top:15px;border-top:1px solid var(--rule)}
+.g{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 8px}
+.gl{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3)}
+.gv{font-size:15px;font-weight:600;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.gv i{font-style:normal;font-size:10.5px;font-weight:400;color:var(--ink-3);margin-left:1px}
+.gb{grid-column:1 / -1;height:3px;border-radius:3px;overflow:hidden;margin-top:6px;
+  background:color-mix(in srgb,var(--ink-2) 18%,transparent)}
+.gb b{display:block;height:100%;border-radius:3px;background:var(--ink-3);
+  transition:width .4s cubic-bezier(.2,.7,.3,1)}
+.g.over .gv{color:var(--ink)}
+.g.over .gb b{background:currentColor}
+
+/* ---------- packing ---------- */
+/* The panel is deliberately quieter than the verdict: no card shadow, no accent
+   fill, one hairline holding it together. It is a reference you work down while
+   packing — it must never compete with the sentence at the top of the page. */
+.pack-panel{margin-top:14px;border-top:1px solid var(--rule);padding-top:16px}
+.pack-why{color:var(--ink-2);font-size:clamp(13.5px,2vw,15px);line-height:1.5;
+  margin-bottom:20px;max-width:56ch}
+.chip-wall{display:flex;flex-wrap:wrap;gap:8px}
+.chip-item{
+  display:inline-flex;align-items:center;gap:10px;min-height:44px;
+  padding:9px 14px;border-radius:999px;cursor:pointer;text-align:left;
+  font:inherit;font-size:14px;color:var(--ink);
+  background:color-mix(in srgb,var(--card) 62%,transparent);
+  border:1px solid var(--rule);backdrop-filter:blur(8px);
+  transition:background .18s ease,border-color .18s ease,opacity .18s ease,transform .16s ease;
+}
+/* Essentials — needed on half the trip, or forced by a rough day — carry more
+   weight. Everything else stays deliberately quiet. */
+.chip-item.key{font-weight:600;border-color:color-mix(in srgb,var(--ink-2) 40%,transparent)}
+@media(hover:hover){.chip-item:hover{transform:translateY(-1px);
+  background:color-mix(in srgb,var(--card) 88%,transparent);
+  border-color:color-mix(in srgb,var(--accent) 50%,transparent)}}
+.chip-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* In the tray: smaller, quieter, struck through. It is done, not deleted. */
+.chip-item.packed{
+  opacity:.5;font-weight:400;font-size:13px;min-height:38px;padding:7px 13px;
+  background:transparent;border-style:dashed;
+}
+.chip-item.packed .chip-lbl{text-decoration:line-through}
+@media(hover:hover){.chip-item.packed:hover{opacity:.85}}
+
+/* ---- shelves ---- */
+.shelf+.shelf{margin-top:26px}
+.shelf.tray{margin-top:30px;padding-top:20px;border-top:1px dashed var(--rule)}
+.shelf-head{display:flex;align-items:baseline;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.shelf-head h3{margin:0;font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(17px,2.2vw,21px);letter-spacing:-.01em;color:var(--ink)}
+.shelf-head em{font-style:normal;font-size:12px;color:var(--ink-2);opacity:.9}
+.all-packed{margin-top:20px;color:var(--ink-2);font-size:14.5px}
+
+/* the day text: legible words, not 4px dots */
+.chip-when{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.05em;
+  color:var(--ink-2);padding:3px 8px;border-radius:20px;white-space:nowrap;cursor:pointer;
+  background:color-mix(in srgb,var(--ink-2) 12%,transparent);
+}
+.chip-when:hover{color:var(--ink);background:color-mix(in srgb,var(--accent) 24%,transparent)}
+
+/* pointing at an item lights its days on the strip and mutes the rest.
+   NB: no bare `.seg{transition:...}` here — this block sits after the rail CSS,
+   so redeclaring transition wiped the flex easing and made the segments snap
+   open instead of growing. The filter timing lives in the canonical rule. */
+.seg.hi{filter:brightness(1.25) saturate(1.15);z-index:1}
+.seg.dim{filter:brightness(.5) saturate(.6)}
+
+/* ---- bag size ---- */
+.pack-modes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.mode{
+  font:inherit;font-size:12.5px;padding:8px 14px;min-height:40px;border-radius:999px;cursor:pointer;
+  background:transparent;border:1px solid var(--rule);color:var(--ink-2);
+  transition:background .18s,color .18s,border-color .18s;
+}
+.mode.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.mode:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mode-why{font-size:12.5px;color:var(--ink-3);flex:1;min-width:0}
+
+/* ---- progress: a thin bar, never a grid of boxes ---- */
+/* A hairline read as a divider. This reads as a gauge. */
+.pack-progress{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.pack-progress .bar{flex:1;height:6px;border-radius:6px;overflow:hidden;
+  background:color-mix(in srgb,var(--ink-2) 20%,transparent)}
+.pack-progress .bar i{display:block;height:100%;width:0;border-radius:6px;
+  background:linear-gradient(90deg,var(--accent),var(--good));transition:width .22s ease}
+.pack-progress .mono{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-2);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+
+@media(prefers-reduced-motion:reduce){
+  .chip-item,.dot,.pack-progress .bar i{transition:none}
+  .chip-item:hover,.dot:hover{transform:none}
+}
+
+.pack-foot{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.copy{
+  font:inherit;font-size:13px;padding:11px 18px;min-height:44px;border-radius:8px;cursor:pointer;
+  background:transparent;border:1px solid var(--rule);color:var(--ink-2);
+  transition:border-color .14s,color .14s;
+}
+.copy:hover{border-color:var(--accent);color:var(--ink)}
+.copy-note{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-3)}
+.copy-fallback{width:100%;margin-top:10px;min-height:120px;font:12px/1.5 "JetBrains Mono",monospace;
+  padding:10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink)}
+h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:clamp(22px,3.6vw,30px);margin:0;letter-spacing:-.01em}
+.h2sub{color:var(--ink-3);font-size:14px;margin-top:4px}
+.section-head{margin-top:46px;padding-top:18px;border-top:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:2px}
+
+/* Nothing may push the page sideways. Wide content (the strip) scrolls inside
+   its own box instead; `clip` rather than `hidden` so it cannot create a
+   scroll container that swallows position:sticky later. */
+html,body{max-width:100%;overflow-x:clip}
+@media(max-width:560px){
+  /* Every interactive thing clears 44px on touch. */
+  input,select,button{min-height:44px}
+  .ex{min-height:76px}
+  #ac li{min-height:46px;align-items:center}
+  .chip-item,.copy,.err-do{min-height:46px}
+}
+
+/* ---------- certainty: a mark, not a warning ----------
+   Past day 7 the forecast is a direction. The cue is deliberately quiet — one
+   mono label and a hairline on the strip — because the day still has a real
+   verdict worth reading. A modal or a banner here would make the page feel
+   less trustworthy, not more. */
+.day-tags{display:flex;align-items:center;gap:9px;min-width:0}
+.far-tag{
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);opacity:.72;white-space:nowrap;cursor:help;
+  border-bottom:1px dotted var(--ink-3);padding-bottom:1px;
+}
+.day.far .verdict{opacity:.88}
+.seg.far{opacity:.72}
+.seg.far:hover{opacity:1}
+
+/* ---------- choices (disambiguation) ---------- */
+.choice{
+  width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);
+  border-radius:10px;padding:13px 16px;cursor:pointer;margin-top:8px;
+  display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+  transition:border-color .14s, transform .14s;
+}
+.choice:hover{border-color:var(--accent);transform:translateX(2px)}
+.choice-main{display:flex;flex-direction:column;gap:3px;min-width:0}
+.choice{color:var(--ink)}
+.choice b{font-size:16px;font-weight:600;line-height:1.25;color:var(--ink)}
+.choice em{font-style:normal;color:var(--ink-2);font-size:14px;line-height:1.3}
+.choice-pop{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.choice:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* On a phone this is the only screen standing between you and the answer, and
+   it is usually reached one-handed. 64px rows, the country on its own line, and
+   the population right-aligned so the list scans as a column of sizes. */
+@media(max-width:560px){
+  .choice{min-height:64px;padding:14px 16px;align-items:center;gap:14px;margin-top:10px}
+  .choice b{font-size:17px}
+  .choice em{font-size:13.5px}
+  .choice-pop{font-size:11.5px;align-self:center}
+  .choice:hover{transform:none}
+}
+
+/* ---------- errors ---------- */
+.err-kind{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:8px;
+}
+.err-hint{margin-top:8px;color:var(--ink-2)}
+.notice{
+  background:var(--card);border:1px solid var(--rule);border-radius:var(--r);
+  padding:18px 20px;margin-top:24px;box-shadow:var(--shadow);
+}
+.notice h2{font-size:clamp(19px,3vw,24px)}
+.notice p{margin-top:6px;color:var(--ink-2);font-size:14.5px;line-height:1.55}
+.notice .err-do{margin-top:14px}
+
+.where-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+/* The headline only becomes a target while there is something to go back from. */
+.headline.previewing{cursor:pointer}
+/* The tapped segment, marked the same quiet way the suggested day is. */
+.seg.on{filter:brightness(1.16)}
+.seg.on::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:currentColor;opacity:.9}
+.err-do{
+  margin-top:16px;font:inherit;font-size:14px;padding:10px 18px;border-radius:9px;cursor:pointer;
+  background:var(--ink);color:var(--paper);border:1px solid var(--ink);
+  transition:opacity .14s;
+}
+.err-do:hover{opacity:.86}
+.err-do:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:560px){.err-do{width:100%;min-height:48px}}
+
+/* ---------- loading ---------- */
+.skeleton{height:96px;border-radius:var(--r);background:var(--card);border:1px solid var(--rule);
+  position:relative;overflow:hidden;margin-top:12px}
+.skeleton::after{
+  content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 6%,transparent),transparent);
+  animation:sweep 1.15s infinite;
+}
+@keyframes sweep{to{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){.skeleton::after{animation:none}}
+.load-dots{display:flex;gap:6px;margin:10px 0 4px}
+.load-dots i{width:22px;height:2px;border-radius:2px;background:var(--rule);transition:background .3s}
+.load-dots i.on{background:var(--accent)}
+form.busy{opacity:.62;pointer-events:none}
+form.busy input,form.busy button{cursor:progress}
+.empty-label{margin-top:22px;margin-bottom:2px;font-family:"JetBrains Mono",monospace;
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);opacity:.8}
+.empty-label+.empty{margin-top:12px}
+.loading-note{color:var(--ink-3);font-family:"JetBrains Mono",monospace;font-size:12px;
+  letter-spacing:.1em;text-transform:uppercase;margin-top:20px}
+
+/* ---------- error ---------- */
+.error{border-left:4px solid var(--hostile)}
+.error h2{color:var(--hostile)}
+.error p{color:var(--ink-2);margin:10px 0 0;max-width:60ch}
+
+footer{margin-top:52px;padding-top:22px;border-top:1px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.72);font-size:13px;line-height:1.7;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+footer a{color:#fff}
+footer strong{color:#fff}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── TEXT THAT SITS ON THE SKY ─────────────────────────────────────────────
+   Anything not on a card is reading against a canvas that ranges from near
+   black to bright amber, so --ink-2 / --ink-3 (mid greys, chosen for text on a
+   panel) were washing out. These take a light literal plus a soft shadow, which
+   is what keeps them legible over BOTH extremes. Text inside cards is left
+   alone — it has a surface behind it and does not need the shadow. */
+.kicker,.sub,.empty-lead,.empty-label,
+.section-head h2,.h2sub,
+.pack-why,.mode-why,.pack-progress .mono,.copy-note,
+.shelf-head h3,.shelf-head em,.all-packed,
+.quick-lab{ text-shadow:0 1px 14px rgba(0,0,0,.55); }
+
+.kicker{color:#AEC2D6 !important}
+.sub{color:#DCE6F1 !important}
+.empty-lead{color:#DCE6F1 !important}
+.empty-label{color:#B4C6D8 !important}
+.section-head h2{color:#F2F6FB !important}
+.h2sub{color:#C3D2E1 !important}
+.pack-why{color:#DCE6F1 !important}
+.mode-why{color:#BECDDC !important}
+.pack-progress .mono{color:#CFDBE8 !important}
+.copy-note{color:#CFDBE8 !important}
+.shelf-head h3{color:#F2F6FB !important}
+.shelf-head em{color:#BECDDC !important;opacity:1}
+.all-packed{color:#DCE6F1 !important}
+.mode{color:#CFDBE8}
+.mode.on{color:var(--paper)}
+.copy{color:#DCE6F1}
+footer{color:rgba(255,255,255,.82)}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="mast">
+    <div class="kicker">Trip weather, decided</div>
+    <h1>Read the sky <em>before you pack.</em></h1>
+    <p class="sub">A 40% chance of rain has never once told you whether to bring the coat. Give me a city and your dates: you get a plain verdict for every day, one packing list for the trip, and the single day worth spending outdoors.</p>
+  </header>
+
+  <!-- novalidate: we write our own messages. The browser tooltip cannot say
+       "that is 19 days, the cap is 14" or offer to fix the dates for you. -->
+  <form id="form" autocomplete="off" novalidate>
+    <div class="field combo">
+      <label for="city">City</label>
+      <input id="city" name="city" type="text" placeholder="Start typing a city…" required
+             role="combobox" aria-autocomplete="list" aria-expanded="false"
+             aria-controls="ac" autocomplete="off" spellcheck="false">
+      <ul id="ac" role="listbox" aria-label="City suggestions" hidden></ul>
+    </div>
+    <div class="field">
+      <label for="start">First day</label>
+      <input id="start" name="start" type="date" required autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="end">Last day</label>
+      <input id="end" name="end" type="date" required autocomplete="off">
+    </div>
+    <button id="go" type="submit">Get the verdict</button>
+  </form>
+
+  <div id="out" aria-live="polite"></div>
+
+  <footer>
+    Forecast and geocoding from <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>, fetched live in your browser — no key, nothing stored, nothing cached.
+    Advice is written for <strong>city sightseeing on foot</strong>; a trekker or a wedding guest would need different thresholds.
+    Forecasts are reliable for about a fortnight, so the range is capped at 14 days.
+  </footer>
+</div>
+
+<script>
+/* ---- judgement layer, inlined so the page works from file:// too ---- */
+
+
+/* --- Which signals count, and which are ignored ---------------------------
+   USED
+     apparent_temperature_max  the number that decides how a day FEELS on foot.
+                               Jaipur today: 32.3° actual, 37° apparent. Advice
+                               built on the raw max would be wrong by a category.
+     temperature_2m_min        evenings and early starts, and the pack decision
+                               for a layer.
+     precipitation_probability + precipitation_sum   ALWAYS together. An 80%
+                               chance of 0.2 mm is a non-event; 45% of 12 mm
+                               soaks you. Probability alone is the single most
+                               common way weather apps mislead.
+     uv_index_max              on foot there is often no shade for hours.
+     wind_speed_10m_max        above ~40 km/h an umbrella is useless, which
+                               changes the packing list from umbrella to hood.
+
+   IGNORED ON PURPOSE
+     weather_code              a summary of what we already derive from the raw
+                               values. Including it would double-count and
+                               occasionally contradict our own verdict.
+     hourly series             would let us say "rain clears by 2pm", but the
+                               packing list — the actual output — never changes
+                               because of it. Cost without payoff.
+     sunrise / sunset          shown as context because early starts matter,
+                               never used to compute a verdict.
+   ------------------------------------------------------------------------ */
+
+const T = {
+  HEAT_DANGEROUS: 40,   // apparent °C — walking is a health risk, not discomfort
+  HEAT_HARD: 35,        // apparent °C — doable but it will define the day
+  WARM: 30,             // apparent °C — pleasant only with water and shade
+  MILD_LOW: 12,         // apparent max below this reads as a cold day out
+  COLD_NIGHT: 5,        // daily min — a real coat, not a jumper
+  FREEZING: 0,
+  RAIN_PROB_LIKELY: 60, // %
+  RAIN_PROB_MAYBE: 45,  // %
+  RAIN_SUM_SOAKING: 4,  // mm across the day
+  RAIN_SUM_NOTICEABLE: 1.5,
+  UV_EXTREME: 11,
+  UV_HIGH: 8,
+  UV_MODERATE: 6,
+  WIND_STRONG: 40,      // km/h — umbrellas fail
+  WIND_NOTICEABLE: 25,
+};
+
+/* Severity drives BOTH the colour and which single sentence wins.
+   0 good · 1 fine · 2 plan around it · 3 hostile */
+const RANK = { good: 0, fine: 1, caution: 2, hostile: 3 };
+
+/**
+ * One day in, one verdict out.
+ *
+ * The hard part is not detecting problems — it is that several can be true at
+ * once and the user gets ONE sentence. Order is fixed and defensible:
+ * things that can hurt you, then things that ruin the day, then things you
+ * merely carry an item for.
+ */
+function judgeDay(d) {
+  // A missing value is NOT zero. Treating a null minimum as 0 once produced a
+  // confident "below freezing overnight" from a day with no temperature data —
+  // inventing dangerous advice from absent data is worse than saying nothing.
+  const feels = maybe(d.apparent_temperature_max) ?? maybe(d.temperature_2m_max);
+  const min = maybe(d.temperature_2m_min);
+  const prob = maybe(d.precipitation_probability_max);
+  const mm = maybe(d.precipitation_sum);
+  const uv = maybe(d.uv_index_max);
+  const wind = maybe(d.wind_speed_10m_max);
+  /* Carried for RENDERING only — the sky needs to know snow from rain, and a
+     thunderstorm from a shower. Neither is allowed into the verdict: the
+     thresholds already derive from the underlying numbers, and letting a
+     summary code vote as well would double-count. See NOTE.md. */
+  const snow = maybe(d.snowfall_sum);
+  const code = Number.isFinite(d.weather_code) ? d.weather_code : null;
+
+  const has = (v) => v !== null && v !== undefined;
+
+  const notes = [];   // everything true about the day, ranked
+  const pack = new Set();
+
+  /* ---- heat ---- */
+  if (has(feels) && feels >= T.HEAT_DANGEROUS) {
+    notes.push({ r: RANK.hostile, key: "heat",
+      say: "Dangerously hot — keep out of the sun between 11am and 4pm." });
+    pack.add("Refillable water bottle (2L)"); pack.add("Wide-brim hat"); pack.add("Electrolyte sachets");
+  } else if (has(feels) && feels >= T.HEAT_HARD) {
+    notes.push({ r: RANK.caution, key: "heat",
+      say: "Punishing in the afternoon — do your walking early and rest at midday." });
+    pack.add("Refillable water bottle (2L)"); pack.add("Wide-brim hat");
+  } else if (has(feels) && feels >= T.WARM) {
+    notes.push({ r: RANK.fine, key: "heat", say: "Warm — fine if you keep water on you." });
+    pack.add("Refillable water bottle"); pack.add("Light breathable layers");
+  }
+
+  /* ---- cold ---- */
+  if (has(min) && min <= T.FREEZING) {
+    notes.push({ r: RANK.hostile, key: "cold",
+      say: "Below freezing overnight — proper winter kit or you will cut the day short." });
+    pack.add("Insulated coat"); pack.add("Gloves and warm hat"); pack.add("Thermal base layer");
+  } else if (has(min) && min <= T.COLD_NIGHT) {
+    notes.push({ r: RANK.caution, key: "cold",
+      say: "Cold once the sun drops — you will want a real coat for the evening." });
+    pack.add("Warm coat"); pack.add("Gloves and warm hat");
+  } else if (has(feels) && feels <= T.MILD_LOW) {
+    notes.push({ r: RANK.fine, key: "cold", say: "Chilly out — a jumper under a jacket does it." });
+    pack.add("Warm layer / jumper");
+  }
+
+  /* ---- rain: probability and volume together, never alone ---- */
+  const P = has(prob) ? prob : 0, M = has(mm) ? mm : 0;
+  const soaking = P >= T.RAIN_PROB_LIKELY && M >= T.RAIN_SUM_SOAKING;
+  const showers = (P >= T.RAIN_PROB_MAYBE && M >= T.RAIN_SUM_NOTICEABLE) || M >= T.RAIN_SUM_SOAKING;
+  const spitting = P >= T.RAIN_PROB_MAYBE && M > 0 && M < T.RAIN_SUM_NOTICEABLE;
+
+  if (soaking) {
+    notes.push({ r: RANK.caution, key: "rain",
+      say: "Wet day — enough rain to reroute an afternoon. Plan something indoors." });
+    pack.add("Waterproof jacket"); pack.add("Dry bag or waterproof phone pouch"); pack.add("Shoes that survive a soaking");
+  } else if (showers) {
+    notes.push({ r: RANK.fine, key: "rain", say: "Showers around — carry a raincoat, do not rearrange the day." });
+    pack.add("Packable raincoat");
+  } else if (spitting) {
+    notes.push({ r: RANK.good, key: "rain", say: "A bit of drizzle possible, nothing that stops you." });
+    pack.add("Packable raincoat");
+  }
+
+  /* ---- UV ---- */
+  if (has(uv) && uv >= T.UV_EXTREME) {
+    notes.push({ r: RANK.caution, key: "uv", say: "Extreme UV — you will burn in about fifteen minutes." });
+    pack.add("SPF 50 sunscreen"); pack.add("Sunglasses"); pack.add("Wide-brim hat");
+  } else if (has(uv) && uv >= T.UV_HIGH) {
+    notes.push({ r: RANK.fine, key: "uv", say: "Strong sun — reapply sunscreen through the day." });
+    pack.add("SPF 50 sunscreen"); pack.add("Sunglasses");
+  } else if (has(uv) && uv >= T.UV_MODERATE) {
+    pack.add("SPF 30 sunscreen"); pack.add("Sunglasses");
+  }
+
+  /* ---- wind ---- */
+  if (has(wind) && wind >= T.WIND_STRONG) {
+    notes.push({ r: RANK.caution, key: "wind",
+      say: "Strong wind — an umbrella will be useless, take a hood." });
+    pack.add("Hooded windproof jacket");
+  } else if (has(wind) && wind >= T.WIND_NOTICEABLE && has(feels) && feels < T.WARM) {
+    notes.push({ r: RANK.fine, key: "wind", say: "Breezy enough to feel colder than the number suggests." });
+    pack.add("Windproof outer layer");
+  }
+
+  /* ---- the unremarkable day, said with confidence ----
+     Most days are unremarkable. Hedging here ("moderate conditions expected")
+     is what makes weather apps useless, so we commit. */
+  // No usable data at all — say so rather than implying a good day.
+  if (!has(feels) && !has(min) && !has(prob) && !has(mm)) {
+    return { band: "unknown", verdict: "No forecast data for this day.", lead: null, also: [], pack: [],
+      feels, min, prob, mm, uv, wind, snow, code };
+  }
+
+  if (!notes.length) {
+    return {
+      band: "good",
+      verdict: "Straightforward day out. Nothing to plan around.",
+      lead: null,
+      also: [],
+      pack: ["Comfortable walking shoes"],
+      feels, min, prob, mm, uv, wind, snow, code,
+    };
+  }
+
+  notes.sort((a, b) => b.r - a.r);
+  const lead = notes[0];
+  const band = lead.r === RANK.hostile ? "hostile"
+             : lead.r === RANK.caution ? "caution"
+             : lead.r === RANK.fine ? "fine" : "good";
+
+  return {
+    band,
+    verdict: lead.say,
+    /* The reason that WON. The sky reads this rather than re-deriving the
+       weather on its own — otherwise the two can disagree, and a day whose
+       sentence says "punishing in the afternoon" ends up painted as rain. */
+    lead: lead.key,
+    also: notes.slice(1).map((n) => n.say),   // secondary issues, shown small
+    pack: [...pack],
+    feels, min, prob, mm, uv, wind, snow, code,
+  };
+}
+
+/* ---------------------------------------------------------------------------
+   CONFIDENCE THAT DECAYS WITH DISTANCE
+   A day-13 forecast is a direction; a day-2 forecast is close to a promise.
+   Three deliberate asymmetries:
+     1. VISUAL marks every day past the horizon, good or bad.
+     2. LANGUAGE softens only distant ROUGH days. The errors are not symmetric:
+        a far good day that turns bad is a disappointment you handle on the
+        trip; a far bad day you cancelled over is a wasted trip.
+     3. The softened sentence KEEPS its advice and gains ONE trailing clause —
+        someone reading a day-12 heat warning still wants to know to walk early.
+   -------------------------------------------------------------------------- */
+const HORIZON = 7;
+
+function forecastAge(dateISO, from = new Date()) {
+  if (typeof dateISO !== "string") return null;
+  const target = Date.parse(dateISO + "T00:00:00Z");
+  if (!Number.isFinite(target)) return null;
+  const base = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  return Math.round((target - base) / 864e5);
+}
+
+function withCertainty(day, age) {
+  const far = Number.isFinite(age) && age > HORIZON;
+  if (!far) return { ...day, age, certainty: "firm" };
+  const rough = day.band === "caution" || day.band === "hostile";
+  if (!rough) return { ...day, age, certainty: "distant" };
+  return { ...day, age, certainty: "provisional",
+    verdict: `${day.verdict} On current forecast — recheck closer to the date.` };
+}
+
+const withTripCertainty = (days, from = new Date()) =>
+  days.map((d) => withCertainty(d, forecastAge(d.date, from)));
+
+/* The trip line earns a caveat only when EVERY problem day is beyond the
+   horizon. One rough day close in means the trip really does have a problem,
+   and hedging it would be dishonest in the other direction. */
+function farProblemCaveat(days) {
+  const rough = days.filter((d) => d.band === "caution" || d.band === "hostile");
+  if (!rough.length) return "";
+  if (!rough.every((d) => Number.isFinite(d.age))) return "";
+  if (!rough.every((d) => d.age > HORIZON)) return "";
+  return " Every rough day here is more than a week out — recheck before you commit.";
+}
+
+/**
+ * One line for the whole trip. Answers "how is this looking" before any number.
+ */
+function judgeTrip(days) {
+  const n = days.length;
+  const hostile = days.filter((d) => d.band === "hostile").length;
+  const caution = days.filter((d) => d.band === "caution").length;
+  const easy = days.filter((d) => d.band === "good" || d.band === "fine").length;
+  const wet = days.filter((d) => (d.prob ?? 0) >= T.RAIN_PROB_MAYBE && (d.mm ?? 0) >= T.RAIN_SUM_NOTICEABLE).length;
+  const hot = days.filter((d) => (d.feels ?? -99) >= T.HEAT_HARD).length;
+  const cold = days.filter((d) => (d.min ?? 99) <= T.COLD_NIGHT).length;
+  const plural = (k, w) => `${k} ${w}${k === 1 ? "" : "s"}`;
+  const caveat = farProblemCaveat(days);
+
+  if (hostile === 0 && caution === 0) {
+    return { tone: "good", line: n === 1
+      ? "Good day for it. Pack light and go."
+      : `All ${n} days look good. Pack light — nothing here needs working around.` };
+  }
+  if (hostile >= Math.ceil(n / 2)) {
+    return { tone: "hostile", line:
+      `A hard trip weather-wise — ${plural(hostile, "day")} are genuinely rough. Build indoor options in.` + caveat };
+  }
+  // Two pervasive problems at once deserve naming — a hot trip and a hot WET
+  // trip need different bags, and "hot trip" alone would hide the raincoat.
+  if (hot >= Math.ceil(n / 2) && wet >= Math.ceil(n / 2)) {
+    return { tone: "caution", line:
+      `Hot and wet — ${plural(hot, "day")} of afternoon heat with rain on ${wet}. Start early, and take a raincoat you can walk in, not an umbrella.` + caveat };
+  }
+  if (hot >= Math.ceil(n / 2)) {
+    return { tone: "caution", line:
+      `Hot trip. ${plural(hot, "day")} punish you in the afternoon — start early, rest at midday, carry more water than feels sensible.` + caveat };
+  }
+  if (cold >= Math.ceil(n / 2)) {
+    return { tone: "caution", line:
+      `Cold trip. ${plural(cold, "evening")} drop cold enough to need a real coat, not a jumper.` + caveat };
+  }
+  if (wet >= Math.ceil(n / 2)) {
+    return { tone: "caution", line:
+      `Wet trip — rain on ${plural(wet, "day")}. Waterproofs, not an umbrella, and a couple of indoor days planned.` + caveat };
+  }
+  return { tone: "mixed", line:
+    `Mostly workable — ${plural(easy, "good day")} out of ${n}, with ${plural(hostile + caution, "day")} to plan around.` + caveat };
+}
+
+/* ---------------------------------------------------------------------------
+   THE MOVE — the single highest-leverage decision for the week
+   Day cards describe days in the order they happen, which is the least useful
+   ordering there is. This answers the only question that changes what you do.
+   Four outcomes: swap / protect / none / silence. It names only days from the
+   user's own range, never invents hourly timing, and stays quiet when a
+   reshuffle would change nothing.
+   -------------------------------------------------------------------------- */
+const EASY = new Set(["good", "fine"]);
+const ROUGH = new Set(["caution", "hostile"]);
+
+function discomfort(d) {
+  const feels = d.feels ?? 20;
+  let score = Math.abs(feels - 21) * 1.4;        // 21°C is the walking ideal
+  score += (d.mm ?? 0) * 2.2;                    // rain hurts more than warmth
+  score += Math.max(0, (d.uv ?? 0) - 7) * 2.0;
+  score += Math.max(0, (d.wind ?? 0) - 22) * 0.5;
+  return score;
+}
+
+const WEEKDAY = (isoDate) =>
+  new Date(isoDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long" });
+
+function bestMove(days) {
+  if (!Array.isArray(days) || days.length < 2) return null;
+  const marked = days.map((d, i) => ({ d, i }));
+  const easy = marked.filter(({ d }) => EASY.has(d.band));
+  const rough = marked.filter(({ d }) => ROUGH.has(d.band));
+
+  if (!rough.length) return null;                // an easy week reshuffles into an easy week
+  if (!easy.length) {
+    return { kind: "none", outdoorIndex: null, protectIndex: null,
+      line: "No reshuffle helps. Bag stays the same either way." };
+  }
+
+  const best = easy.reduce((a, b) => (discomfort(b.d) < discomfort(a.d) ? b : a));
+  const worst = rough.reduce((a, b) => (discomfort(b.d) > discomfort(a.d) ? b : a));
+
+  if (rough.length === 1) {
+    return { kind: "protect", outdoorIndex: best.i, protectIndex: worst.i,
+      line: `One ${worst.d.band === "hostile" ? "hostile" : "rough"} day — make ${WEEKDAY(worst.d.date)} the museum day.` };
+  }
+  return { kind: "swap", outdoorIndex: best.i, protectIndex: worst.i,
+    line: `Swap outdoor plans: do ${WEEKDAY(best.d.date)}, protect ${WEEKDAY(worst.d.date)}.` };
+}
+
+/** Trip-wide packing list, deduplicated, ordered by how many days need it. */
+/* Each entry carries the INDICES of the days that need it, not just a count —
+   the UI needs "which days?" for the shelf split and for the carry-on cut. */
+function packingList(days) {
+  const where = new Map();
+  days.forEach((d, i) => {
+    for (const item of d.pack || []) {
+      if (!where.has(item)) where.set(item, []);
+      where.get(item).push(i);
+    }
+  });
+  const half = Math.ceil(days.length / 2);
+  return [...where.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .map(([item, on]) => ({
+      item, on, days: on.length, group: packGroup(item),
+      essential: on.length >= half || on.some((i) => ROUGH.has(days[i].band)),
+    }));
+}
+
+/* A carry-on is what the trip FORCES on you: things needed on at least half
+   the days, plus anything a hostile day demands. Single-day comforts go.
+   The brief's rule (>=2 days OR any rough day) cut nothing on real forecasts —
+   verified against four cities — so the threshold is half-the-trip and the
+   safety exemption is hostile-only. See NOTE.md. */
+function carryOnList(list, days) {
+  if (list.length < 5) return null;          // nothing to gain by shrinking
+  const half = Math.ceil(days.length / 2);
+  const cut = list.filter((p) =>
+    p.on.length >= half || p.on.some((i) => days[i].band === "hostile"));
+  // null = not a real choice here; an identical "cut" list would be a lie.
+  if (!cut.length || cut.length === list.length) return null;
+  return cut;
+}
+
+/* Grouped by what you DO with the thing while packing, not by weather cause.
+   Someone packing works body-outward: clothes into the case, then the daypack,
+   then the small things that stop you getting burnt or soaked. Grouping by
+   cause would scatter one jumper across three headings.
+   Wide-brim hat sits in Protect though you wear it — its job is sun. */
+const PACK_GROUPS = {
+  "Comfortable walking shoes": "Wear", "Shoes that survive a soaking": "Wear",
+  "Insulated coat": "Wear", "Warm coat": "Wear", "Warm layer / jumper": "Wear",
+  "Thermal base layer": "Wear", "Light breathable layers": "Wear",
+  "Gloves and warm hat": "Wear", "Waterproof jacket": "Wear",
+  "Hooded windproof jacket": "Wear", "Windproof outer layer": "Wear",
+  "Refillable water bottle": "Carry", "Refillable water bottle (2L)": "Carry",
+  "Electrolyte sachets": "Carry", "Packable raincoat": "Carry",
+  "Dry bag or waterproof phone pouch": "Carry",
+  "SPF 30 sunscreen": "Protect", "SPF 50 sunscreen": "Protect",
+  "Sunglasses": "Protect", "Wide-brim hat": "Protect",
+};
+const GROUP_ORDER = ["Wear", "Carry", "Protect"];
+const GROUP_HINT = { Wear: "on you", Carry: "in the daypack", Protect: "small, easy to forget" };
+const packGroup = (item) => PACK_GROUPS[item] || "Carry";
+const groupPacking = (list) => GROUP_ORDER
+  .map((group) => ({ group, items: list.filter((x) => x.group === group) }))
+  .filter((g) => g.items.length);
+
+/* One line explaining the SHAPE of the bag. Same counting rule as judgeTrip so
+   the two can never contradict each other. One sentence, deliberately. */
+function bagLine(days) {
+  if (!Array.isArray(days) || !days.length) return null;
+  const n = days.length, half = Math.ceil(n / 2);
+  const wet = days.filter((d) => (d.prob ?? 0) >= T.RAIN_PROB_MAYBE && (d.mm ?? 0) >= T.RAIN_SUM_NOTICEABLE).length;
+  const hot = days.filter((d) => (d.feels ?? -99) >= T.HEAT_HARD).length;
+  const cold = days.filter((d) => (d.min ?? 99) <= T.COLD_NIGHT).length;
+  const rough = days.filter((d) => d.band === "caution" || d.band === "hostile").length;
+  if (hot >= half && wet >= half) return "A hot-and-wet bag: everything breathable, plus one waterproof you can walk in.";
+  if (hot >= half) return "A hot-weather bag — water and shade matter more than clothes here.";
+  if (cold >= half) return "A cold-weather bag: layers you can add, not one thick coat.";
+  if (wet >= half) return "A wet-weather bag — keep the waterproof on top, not at the bottom.";
+  if (!rough) return "A light bag. Nothing on this trip needs working around.";
+  return "A mixed bag: most days are easy, so pack for the few that are not.";
+}
+
+/* Ticked items persist per trip, keyed by city + dates, so a refresh mid-pack
+   does not wipe your progress — and a DIFFERENT trip starts clean rather than
+   inheriting ticks from the last one. Wrapped because private-mode browsers
+   throw on access rather than returning null. */
+function packKey(place, days) {
+  return `pack:${place.name}|${place.latitude.toFixed(2)},${place.longitude.toFixed(2)}|${days[0]?.date}|${days[days.length - 1]?.date}`;
+}
+function loadTicks(key) {
+  try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); }
+}
+function saveTicks(key, set) {
+  try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* storage unavailable — ticks stay in-session */ }
+}
+
+/** null when the API gave us nothing usable — never silently zero. */
+function maybe(v) {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+/* ---- app ---- */
+
+/* ============================================================================
+   THE SKY — this trip, not a stock background
+   ----------------------------------------------------------------------------
+   PARAMETER MAPPING. Every value below is pulled from the forecast you
+   searched. Nothing here is hand-tuned per city; change the city and the
+   numbers change, which is the whole point.
+
+     rain   <- precipitation_sum         mm    -> 0..1 across 0..10mm
+               drives DROP COUNT. 10mm in a day is a downpour, so it is the top.
+     wind   <- wind_speed_10m_max        km/h  -> 0..1 across 0..55
+               drives the ANGLE the drops fall at, and how fast cloud drifts.
+               Real weather leans. Rain falling straight down is the tell of a
+               stock background, so this is the single most important mapping.
+     haze   <- apparent_temperature_max  °C    -> 0..1 across 18..40
+               drives shimmer-mote count and pushes the light warmer/redder.
+     cloud  <- precipitation_probability %     -> 0..1 across 0..100
+               drives an overcast veil. Probability belongs HERE and not in the
+               drop count: a 90% chance of 0.3mm should look threatening while
+               barely raining — which is exactly what splitting them produces.
+     tone   <- the trip verdict                -> palette
+
+   MOOD BLEND. A trip is not its average — averaging a freezing day and a hot
+   one invents a pleasant trip that no one experiences. So we take the WORST
+   day (what you have to plan around) and the BEST day (what you are hoping
+   for) and blend 65/35 toward the worst. A hot+wet trip and a cold+clear trip
+   therefore look nothing alike even when their means coincide.
+   ========================================================================== */
+const sky = (() => {
+  const cv = document.getElementById("sky");
+  const ctx = cv.getContext("2d", { alpha: true });
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, dpr = 1, raf = 0, t = 0, hidden = false;
+
+  const CALM = { rain: 0, wind: .12, haze: .15, cloud: .18, snow: 0, storm: 0, fog: 0, dim: 0, tone: "idle" };
+  let from = { ...CALM }, to = { ...CALM }, now = { ...CALM };
+  /* While the rail is dragged the palette must blend CONTINUOUSLY between two
+     days. Switching tone at the halfway point put the entire colour change into
+     one frame — measurably 100% of the transition in a single step — which read
+     as a hard cut no matter how smoothly the numbers moved. */
+  let paletteMix = null;                  // {a, b, t} — overrides the from/to crossfade
+  let tweenStart = -1e9;
+  const TWEEN_TRIP = 600;                  // a new city arrives at a considered pace
+  const TWEEN_DAY = 340;                   // a tapped day snaps — it must feel like a response
+  let tweenMs = TWEEN_TRIP;
+  let drops = [], motes = [], puffs = [], flakes = [], birds = [];
+  let flashT = 0, nextFlash = 0;          // lightning: a value that decays, not a toggle
+
+  /* Keyed on the KIND of weather, not the severity band. Keying on the band
+     meant a wet caution day and a hot caution day painted the same amber sky,
+     which is exactly backwards: the band is how bad it is, the colour should
+     say what it IS. */
+  const PALETTE = {
+    idle:    ["#1b2a45", "#41608a", "#c4a184"],
+    good:    ["#123b5e", "#2f7fb5", "#f0c9a0"],   // clear
+    fine:    ["#132c46", "#3a6f9c", "#cfd8e2"],   // mild
+    hot:     ["#3a2413", "#a8621f", "#f0b569"],   // amber
+    scorch:  ["#37131a", "#8e2a2f", "#e4886f"],   // dangerous heat
+    wet:     ["#0f1822", "#27404f", "#69818f"],   // cool slate, no warmth in it
+    storm:   ["#0a0d15", "#1e1c30", "#484263"],   // violet-dark
+    cold:    ["#0e1a2a", "#295073", "#a8c6dd"],   // icy blue
+    snow:    ["#16222f", "#3d5c78", "#ccdceb"],   // pale
+    dead:    ["#191b1f", "#31353b", "#4e5359"],   // error: the colour drains out
+    caution: ["#3a2413", "#a8621f", "#f0b569"],   // kept: old callers
+    hostile: ["#37131a", "#8e2a2f", "#e4886f"],
+  };
+
+  /* The sky takes its colour from the SAME reason the verdict used, so the two
+     can never disagree. Deriving it independently meant a hot-and-wet Jaipur
+     day — where the sentence leads on heat because heat is what you plan around
+     — was painted as a rain sky. */
+  function toneFor(d) {
+    if (!d || d.band === "unknown") return "fine";
+    const feels = d.feels ?? 18, min = d.min ?? 12;
+    const snowing = (d.snow ?? 0) > 0.05 || isSnowCode(d.code);
+    switch (d.lead) {
+      case "heat": return feels >= T.HEAT_DANGEROUS ? "scorch" : "hot";
+      case "cold": return snowing ? "snow" : "cold";
+      case "rain": return isStormCode(d.code) ? "storm" : snowing ? "snow" : "wet";
+      case "uv":   return "hot";
+      case "wind": return min <= T.COLD_NIGHT ? "cold" : "fine";
+      default:     return d.band === "good" ? "good" : "fine";
+    }
+  }
+
+
+  /* Particle budget. Scales with viewport area but is hard-capped at both ends,
+     so a phone stays at 60fps and a 5K display does not spawn 2000 drops. */
+  function budget() {
+    const px = innerWidth * innerHeight, phone = innerWidth < 620;
+    return {
+      drops: Math.min(phone ? 80 : 240, Math.round(px / 5200)),
+      motes: Math.min(phone ? 30 : 78,  Math.round(px / 16000)),
+      puffs: phone ? 5 : 9,
+    };
+  }
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, innerWidth < 620 ? 1.5 : 2);
+    W = cv.width = Math.round(innerWidth * dpr);
+    H = cv.height = Math.round(innerHeight * dpr);
+    cv.style.width = innerWidth + "px"; cv.style.height = innerHeight + "px";
+    seed();
+  }
+
+  /* Allocate ONCE per resize, never per update. The previous version rebuilt
+     every particle inside go(), and go() runs on every frame of a rail drag —
+     so all the rain jumped to fresh random positions sixty times a second. That
+     was the flicker. The pool is now fixed and the weather decides how much of
+     it to DRAW, so a drop keeps its position for its whole life. */
+  function seed() {
+    const b = budget();
+    drops = Array.from({ length: b.drops }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      len: (9 + Math.random() * 23) * dpr, sp: (6 + Math.random() * 11) * dpr, a: .12 + Math.random() * .3,
+    }));
+    motes = Array.from({ length: b.motes }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: (.6 + Math.random() * 1.9) * dpr, sp: (.15 + Math.random() * .5) * dpr,
+      ph: Math.random() * Math.PI * 2, a: .10 + Math.random() * .30,
+    }));
+    flakes = Array.from({ length: b.drops }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: (1.1 + Math.random() * 2.4) * dpr, sp: (.5 + Math.random() * 1.1) * dpr,
+      ph: Math.random() * Math.PI * 2, sw: (.4 + Math.random() * 1.1) * dpr, a: .35 + Math.random() * .5,
+    }));
+    /* Birds. Not weather data — they are there because an empty sky reads as a
+       wallpaper and a sky with something alive in it reads as outside. They
+       clear off when it turns genuinely rough, which is also what birds do. */
+    birds = Array.from({ length: innerWidth < 620 ? 3 : 5 }, () => ({
+      x: Math.random() * W, y: H * (0.10 + Math.random() * 0.30),
+      v: (0.5 + Math.random() * 0.7) * dpr, s: (4.5 + Math.random() * 4) * dpr,
+      ph: Math.random() * Math.PI * 2,
+    }));
+    puffs = Array.from({ length: b.puffs }, () => ({
+      x: Math.random() * W, y: H * (.04 + Math.random() * .55),
+      r: W * .18 * (.55 + Math.random()), sp: (.05 + Math.random() * .15) * dpr, a: .5 + Math.random() * .5,
+    }));
+  }
+
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const hex = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16));
+  const mixHex = (a, b, k) => {
+    const A = hex(a), B = hex(b);
+    return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], k))).join(",")})`;
+  };
+  const easeOut = (k) => 1 - Math.pow(1 - k, 3);
+  const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+
+  function draw(ts) {
+    raf = requestAnimationFrame(draw);
+    if (hidden) return;                    // a hidden tab renders nothing and burns nothing
+    t++;
+
+    /* Time-based, not per-frame — so the crossfade is 600ms on a 144Hz monitor
+       and 600ms on a struggling phone, instead of four times faster on one. */
+    /* Clamped at BOTH ends. go() stamps tweenStart with performance.now(), but
+       draw() receives the rAF timestamp, which is the frame's start and can be
+       a hair EARLIER — so (ts - tweenStart) goes negative, easeOut of a negative
+       overshoots below zero, and every lerped value undershoots its range.
+       Measured: rain reached -0.108, which then drove a particle count past the
+       end of its pool. */
+    const k = reduce ? 1 : easeOut(Math.max(0, Math.min(1, (ts - tweenStart) / tweenMs)));
+    for (const key of ["rain", "wind", "haze", "cloud", "snow", "storm", "fog", "dim"]) now[key] = lerp(from[key], to[key], k);
+
+    let A, B, mk;
+    if (paletteMix) { A = PALETTE[paletteMix.a] || PALETTE.idle; B = PALETTE[paletteMix.b] || PALETTE.idle; mk = paletteMix.t; }
+    else { A = PALETTE[from.tone] || PALETTE.idle; B = PALETTE[to.tone] || PALETTE.idle; mk = k; }
+    const c0 = mixHex(A[0], B[0], mk), c1 = mixHex(A[1], B[1], mk), c2 = mixHex(A[2], B[2], mk);
+    const g = ctx.createLinearGradient(0, 0, W * .35, H);
+    g.addColorStop(0, c0); g.addColorStop(.55, c1); g.addColorStop(1, c2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // overcast veil — opacity from rain PROBABILITY, drift speed from wind
+    if (now.cloud > .04 || now.storm > .04) {
+      ctx.globalCompositeOperation = "soft-light";
+      for (const p of puffs) {
+        if (!reduce) { p.x += p.sp * (.4 + now.wind * 2.6); if (p.x - p.r > W) p.x = -p.r; }
+        const rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        const storm = now.storm;
+        const cr = Math.round(226 - storm * 96), cg = Math.round(232 - storm * 96), cb = Math.round(240 - storm * 80);
+        rg.addColorStop(0, `rgba(${cr},${cg},${cb},${Math.max(now.cloud, storm * .8) * p.a * .55})`);
+        rg.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    /* SUNLIGHT FROM OFF-FRAME.
+       No disc, no rays — the source sits outside the canvas to the lower right
+       and only what it does to the air is drawn. Three layers, because that is
+       what makes light look real rather than like a coloured overlay:
+         1. the falloff from the source, saturated near it and cooling with distance
+         2. a directional wash spilling diagonally across the frame
+         3. a cool lift on the opposite corner, so the warm side has something to
+            be warm AGAINST — colour contrast is what reads as vibrant, not opacity
+       Strength is derived, so it dims under cloud and dies in rain. */
+    const sunAmt = Math.max(0, (1 - now.cloud) * (1 - Math.min(1, now.rain * 1.6)) * (1 - now.storm) * (1 - now.dim));
+    if (sunAmt > 0.03) {
+      const gx = W * 1.06, gy = H * 0.88;          // off the right edge, low
+      const reach = Math.max(W, H) * 1.15;
+
+      // 1 · the falloff — gold at the source through amber to a warm rose
+      const fall = ctx.createRadialGradient(gx, gy, 0, gx, gy, reach);
+      fall.addColorStop(0.00, `rgba(255,214,150,${0.52 * sunAmt})`);
+      fall.addColorStop(0.14, `rgba(255,183,112,${0.34 * sunAmt})`);
+      fall.addColorStop(0.34, `rgba(246,140,96,${0.17 * sunAmt})`);
+      fall.addColorStop(0.60, `rgba(212,108,102,${0.07 * sunAmt})`);
+      fall.addColorStop(1.00, "rgba(190,100,110,0)");
+      ctx.fillStyle = fall; ctx.fillRect(0, 0, W, H);
+
+      // 2 · the spill — light travelling across the frame, corner to corner
+      const spill = ctx.createLinearGradient(W, H, W * 0.05, H * 0.10);
+      spill.addColorStop(0, `rgba(255,196,128,${0.20 * sunAmt})`);
+      spill.addColorStop(0.4, `rgba(255,170,110,${0.07 * sunAmt})`);
+      spill.addColorStop(1, "rgba(255,160,110,0)");
+      ctx.fillStyle = spill; ctx.fillRect(0, 0, W, H);
+
+      // 3 · the shadow side — a cool counterweight so the gold actually sings
+      const cool = ctx.createRadialGradient(0, 0, 0, 0, 0, reach * 0.8);
+      cool.addColorStop(0, `rgba(66,116,178,${0.16 * sunAmt})`);
+      cool.addColorStop(1, "rgba(66,116,178,0)");
+      ctx.fillStyle = cool; ctx.fillRect(0, 0, W, H);
+    }
+
+    // ambient bands — the slow life in the picture, killed off in the error state
+    if (now.dim < .95) {
+      ctx.globalCompositeOperation = "screen";
+      for (let i = 0; i < 3; i++) {
+        const y = H * (.22 + i * .26) + Math.sin(t / (240 + i * 90) + i) * H * .06;
+        const rg = ctx.createRadialGradient(W * (.3 + i * .22), y, 0, W * (.3 + i * .22), y, W * .5);
+        rg.addColorStop(0, `rgba(255,255,255,${(0.05 + i * 0.012) * (1 - now.dim)})`);
+        rg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+      }
+      ctx.globalCompositeOperation = "source-over";
+    }
+
+    // heat shimmer — how many are DRAWN comes from apparent temp
+    const moteN = Math.min(motes.length, Math.max(0, Math.round(motes.length * (0.35 + now.haze * 0.65))));
+    for (let mi = 0; mi < moteN; mi++) {
+      const p = motes[mi];
+      if (!reduce) {
+        p.y -= p.sp * (.5 + now.haze); p.x += Math.sin(t / 90 + p.ph) * .35 * dpr + now.wind * 1.3 * dpr;
+        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+        if (p.x > W + 10) p.x = -10;
+      }
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,${Math.round(242 - now.haze * 42)},${Math.round(222 - now.haze * 72)},${p.a * (1 - now.dim * .85)})`;
+      ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+
+    // birds cross the sky, and thin out as the weather turns
+    const birdN = Math.min(birds.length, Math.max(0, Math.round(birds.length * (1 - now.rain * 1.3 - now.storm - now.snow))));
+    if (!reduce && birdN > 0) {
+      ctx.strokeStyle = `rgba(18,26,40,${0.5 * (1 - now.dim)})`;
+      ctx.lineWidth = 1.4 * dpr; ctx.lineCap = "round";
+      for (let bi = 0; bi < birdN; bi++) {
+        const b = birds[bi];
+        b.x += b.v + now.wind * 1.6 * dpr;
+        if (b.x - 24 > W) { b.x = -24; b.y = H * (0.10 + Math.random() * 0.30); }
+        const flap = Math.sin(t / 10 + b.ph) * b.s * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(b.x - b.s, b.y + flap);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineTo(b.x + b.s, b.y + flap);
+        ctx.stroke();
+      }
+    }
+
+    // rain — how many are DRAWN comes from mm, ANGLE from wind speed
+    const dropN = Math.min(drops.length, Math.max(0, Math.round(drops.length * now.rain)));
+    if (dropN && now.rain > .02) {
+      const lean = 0.15 + now.wind * 1.75;
+      ctx.lineCap = "round"; ctx.lineWidth = 1.1 * dpr;
+      for (let di = 0; di < dropN; di++) {
+        const d = drops[di];
+        if (!reduce) { d.y += d.sp; d.x += d.sp * lean; if (d.y > H) { d.y = -20; d.x = Math.random() * W; } }
+        ctx.strokeStyle = `rgba(210,232,255,${d.a * Math.min(1, now.rain * 2.2) * (1 - now.dim)})`;
+        ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * lean, d.y - d.len); ctx.stroke();
+      }
+    }
+
+    // ── snow ── slower than rain, drifts sideways, barely leans with wind
+    const snowN = Math.min(flakes.length, Math.max(0, Math.round(flakes.length * now.snow)));
+    if (snowN && now.snow > .02) {
+      const drift = now.wind * 1.1;
+      for (let si = 0; si < snowN; si++) {
+        const f = flakes[si];
+        if (!reduce) {
+          f.y += f.sp; f.x += Math.sin(t / 60 + f.ph) * f.sw + drift * dpr;
+          if (f.y > H + 6) { f.y = -6; f.x = Math.random() * W; }
+          if (f.x > W + 6) f.x = -6; else if (f.x < -6) f.x = W + 6;
+        }
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255,255,255,${f.a * Math.min(1, now.snow * 1.6) * (1 - now.dim)})`;
+        ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
+      }
+    }
+
+    // ── fog ── a flat pale veil sitting low, not a particle effect
+    if (now.fog > .03) {
+      const fg = ctx.createLinearGradient(0, H * .35, 0, H);
+      fg.addColorStop(0, `rgba(214,219,226,0)`);
+      fg.addColorStop(1, `rgba(214,219,226,${now.fog * .32})`);
+      ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H);
+    }
+
+    /* ── lightning ──
+       A decaying value, never a toggle, so it reads as a flash with an
+       afterglow rather than a frame of white. Strikes are spaced several
+       seconds apart on purpose: constant flashing is the thing that makes a
+       page feel broken. Off entirely under prefers-reduced-motion. */
+    if (!reduce && now.storm > .25) {
+      if (ts > nextFlash) {
+        flashT = 1;
+        nextFlash = ts + 2600 + Math.random() * 4200;
+      }
+      if (flashT > 0) {
+        flashT = Math.max(0, flashT - 0.055);
+        const e = flashT * flashT;                       // sharp attack, soft tail
+        ctx.fillStyle = `rgba(226,236,255,${e * 0.3 * now.storm})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    } else { flashT = 0; }
+
+    if (now.dim > .01) { ctx.fillStyle = `rgba(21,23,27,${now.dim * .5})`; ctx.fillRect(0, 0, W, H); }
+
+    // vignette so type stays readable over any sky
+    const v = ctx.createRadialGradient(W / 2, H * .35, 0, W / 2, H * .35, Math.max(W, H) * .8);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.34)");
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  }
+
+  function go(next, ms = TWEEN_TRIP) {
+    from = { ...now, tone: to.tone };     // start the crossfade from whatever is on screen
+    to = { ...to, ...next };
+    tweenMs = ms;
+    tweenStart = performance.now();
+    if (reduce) { now = { ...to }; from = { ...to }; }
+  }
+
+  /* iOS fires resize every time the URL bar collapses. Un-debounced this
+     reallocated the canvas and every particle mid-scroll. */
+  let resizeQueued = false;
+  addEventListener("resize", () => {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => { resizeQueued = false; resize(); });
+  }, { passive: true });
+  document.addEventListener("visibilitychange", () => {
+    hidden = document.hidden;
+    // a tab restored after ten minutes must not fast-forward a 600ms tween
+    if (!hidden && tweenStart > -1e8) tweenStart = performance.now() - tweenMs;
+  });
+  resize();
+  raf = requestAnimationFrame(draw);
+
+  /* One day's real numbers, straight through — no blending. This is the same
+     mapping as a trip, minus the worst/best weighting, so tapping Thursday
+     shows Thursday rather than an average that includes it. */
+  /* WMO weather codes, used for rendering only:
+       45,48        fog          71-77, 85-86  snow
+       95,96,99     thunderstorm                                              */
+  const isSnowCode = (c) => (c >= 71 && c <= 77) || c === 85 || c === 86;
+  const isStormCode = (c) => c === 95 || c === 96 || c === 99;
+  const isFogCode = (c) => c === 45 || c === 48;
+
+  const dayParams = (d) => {
+    const c = d.code;
+    // Snow is taken from real snowfall first; the code is the fallback for a
+    // day the model calls snowy but reports as a trace.
+    const snowAmt = clamp01((d.snow ?? 0) / 4) || (isSnowCode(c) ? 0.55 : 0);
+    return {
+      tone: toneFor(d),
+      // snow falls INSTEAD of rain, so the drops back off as flakes take over
+      rain: clamp01((d.mm ?? 0) / 10) * (1 - snowAmt),
+      wind: clamp01((d.wind ?? 0) / 55),
+      haze: clamp01(((d.feels ?? 18) - 18) / 22),
+      cloud: clamp01((d.prob ?? 0) / 100),
+      snow: snowAmt,
+      storm: isStormCode(c) ? 1 : 0,
+      fog: isFogCode(c) ? 1 : 0,
+      dim: 0,
+    };
+  };
+
+  /* Blend two days. Used while the rail is being dragged, so the sky is a
+     continuous function of scroll position rather than a step at the end. */
+  const blendDays = (a, b, t) => {
+    const A = dayParams(a), B = dayParams(b);
+    const mix = (k) => A[k] + (B[k] - A[k]) * t;
+    return { tone: t < 0.5 ? A.tone : B.tone,
+      rain: mix("rain"), wind: mix("wind"), haze: mix("haze"), cloud: mix("cloud"),
+      snow: mix("snow"), storm: mix("storm"), fog: mix("fog"), dim: 0 };
+  };
+
+  let lastTrip = null;                    // what to morph back to
+
+  return {
+    /** Blend the trip's worst and best day into one mood. See mapping above. */
+    trip(days, tone) {
+      const rank = { good: 0, fine: 1, caution: 2, hostile: 3, unknown: 1 };
+      const sorted = [...days].sort((a, b) => (rank[b.band] ?? 1) - (rank[a.band] ?? 1));
+      const worst = sorted[0], best = sorted[sorted.length - 1];
+      const blend = (f) => f(worst) * 0.65 + f(best) * 0.35;
+      const anySnow = days.some((d) => (d.snow ?? 0) > 0.05 || isSnowCode(d.code));
+      /* The trip takes the colour of the day you have to plan around, so a week
+         with one soaking day reads wet rather than averaging into nothing. */
+      const rough = days.filter((d) => d.band === "caution" || d.band === "hostile");
+      const tripTone = rough.length ? toneFor(worst) : (tone === "good" ? "good" : "fine");
+      lastTrip = {
+        tone: tripTone,
+        snow:  clamp01(blend((d) => dayParams(d).snow)),
+        storm: days.some((d) => isStormCode(d.code)) ? 0.7 : 0,
+        fog:   days.some((d) => isFogCode(d.code)) ? 0.6 : 0,
+        rain:  clamp01(blend((d) => (d.mm ?? 0) / 10)) * (anySnow ? 0.5 : 1),
+        wind:  clamp01(blend((d) => (d.wind ?? 0) / 55)),
+        haze:  clamp01(blend((d) => ((d.feels ?? 18) - 18) / 22)),
+        cloud: clamp01(blend((d) => (d.prob ?? 0) / 100)),
+        dim: 0,
+      };
+      paletteMix = null;
+      go(lastTrip, TWEEN_TRIP);
+    },
+
+    /** Tap a day: the sky becomes THAT day, in under 400ms. */
+    day(d, ms = TWEEN_DAY) { if (!d) return; paletteMix = null; go(dayParams(d), ms); },
+
+    /* Drag the rail: the sky tracks the finger. Called every animation frame
+       with a fractional position between two days, and given a very short tween
+       so each call eases from wherever the previous one reached — the effect is
+       a low-pass filter on the scroll rather than a series of jumps. */
+    /* No tween here, deliberately. Scroll position is ALREADY continuous, so the
+       sky should be a pure function of it. Easing each frame meant restarting a
+       150ms curve sixty times a second, and the restarting velocity profile made
+       brightness oscillate — measured as 7 direction reversals across one
+       transition. Setting the value outright tracks the finger exactly. */
+    follow(a, b, t) {
+      if (!a || !b) return;
+      const A = dayParams(a), B = dayParams(b);
+      paletteMix = { a: A.tone, b: B.tone, t };
+      to = { ...to, ...blendDays(a, b, t) };
+      from = { ...to };
+      tweenStart = -1e9;                  // k resolves to 1: now === to, this frame
+      tweenMs = 1;
+    },
+
+    /** Tap the headline: back to the whole trip. */
+    restore() { if (!lastTrip) return; paletteMix = null; go(lastTrip, TWEEN_DAY + 80); },
+    calm()  { lastTrip = null; paletteMix = null; go({ ...CALM }); },                                              // empty state
+    stall() { go({ tone: "dead", rain: 0, wind: .02, haze: .04, cloud: .3, dim: 1 }); }, // error
+  };
+})();
+
+
+const $ = (s) => document.querySelector(s);
+const out = $("#out"), form = $("#form"), go = $("#go");
+const cityEl = $("#city"), startEl = $("#start"), endEl = $("#end");
+
+const MAX_DAYS_AHEAD = 14;
+/* Local calendar date, NOT toISOString(). toISOString converts to UTC first, so
+   a user in New York at 8pm got tomorrow's date as their default start (and
+   could not select today), and a user in India at 1am got yesterday's. */
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const today = new Date();
+const maxDate = new Date(today.getTime() + MAX_DAYS_AHEAD * 864e5);
+
+startEl.min = endEl.min = iso(today);
+startEl.max = endEl.max = iso(maxDate);
+/* Chrome and Safari restore form-control values across a reload, and that
+   restoration runs AFTER this script sets them — so setting the defaults once
+   at parse time is not enough to guarantee a reset. `pageshow` fires after
+   restoration (and again when a page is served from the back-forward cache),
+   so re-applying there is what actually makes the dates reset every load. */
+function resetDates() {
+  startEl.value = iso(today);
+  endEl.value = iso(new Date(today.getTime() + 4 * 864e5));
+}
+resetDates();
+addEventListener("pageshow", resetDates);
+startEl.addEventListener("change", () => { if (endEl.value < startEl.value) endEl.value = startEl.value; });
+
+/* ---------------- states ---------------- */
+/* Three trips chosen because they look nothing alike — hot, cold-and-windy, wet.
+   Each carries its own coordinates, so a click skips geocoding and goes straight
+   to a LIVE forecast: no chooser, no typing, results in one hop. Date ranges are
+   computed from today (offsets, never literals) so they stay inside the 14-day
+   window whenever this page is opened. */
+/* Three climates chosen so the SKIES look nothing alike in a screen recording:
+   hot and dry, cold and wind-driven, wet and grey. Each is one tap — the
+   coordinates travel with the preset, so there is no lookup and no chooser.
+   Captions describe the place's character, not a promise about the week: the
+   forecast is live, and the page reports what it finds. */
+/* A pool, not a fixed trio. One city is drawn from each climate bucket on every
+   load, so the home screen is different each time while STILL guaranteeing the
+   three skies look nothing alike — a random three could easily be three grey
+   cities. Captions are two or three words: the card is a third of a row and
+   anything longer was being clipped. */
+const POOL = {
+  hot: [
+    { name: "Jaipur", admin1: "Rajasthan", country: "India", latitude: 26.9124, longitude: 75.7873, why: "hot and dry" },
+    { name: "Dubai", admin1: "Dubai", country: "United Arab Emirates", latitude: 25.2048, longitude: 55.2708, why: "desert heat" },
+    { name: "Cairo", admin1: "Cairo", country: "Egypt", latitude: 30.0444, longitude: 31.2357, why: "dry, hard sun" },
+    { name: "Marrakesh", admin1: "Marrakesh-Safi", country: "Morocco", latitude: 31.6295, longitude: -7.9811, why: "sun and dust" },
+    { name: "Phoenix", admin1: "Arizona", country: "United States", latitude: 33.4484, longitude: -112.0740, why: "desert sun" },
+    { name: "Bangkok", admin1: "Bangkok", country: "Thailand", latitude: 13.7563, longitude: 100.5018, why: "hot and humid" },
+  ],
+  cold: [
+    { name: "Reykjavík", admin1: "Capital Region", country: "Iceland", latitude: 64.1466, longitude: -21.9426, why: "cold and windy" },
+    { name: "Tromsø", admin1: "Troms", country: "Norway", latitude: 69.6492, longitude: 18.9553, why: "arctic light" },
+    { name: "Anchorage", admin1: "Alaska", country: "United States", latitude: 61.2181, longitude: -149.9003, why: "northern cold" },
+    { name: "Nuuk", admin1: "Sermersooq", country: "Greenland", latitude: 64.1836, longitude: -51.7214, why: "arctic cold" },
+    { name: "Ushuaia", admin1: "Tierra del Fuego", country: "Argentina", latitude: -54.8019, longitude: -68.3030, why: "wind off the sea" },
+  ],
+  wet: [
+    { name: "Bergen", admin1: "Vestland", country: "Norway", latitude: 60.3913, longitude: 5.3221, why: "rain, reliably" },
+    { name: "Singapore", admin1: "", country: "Singapore", latitude: 1.29, longitude: 103.85, why: "hot and wet" },
+    { name: "Glasgow", admin1: "Scotland", country: "United Kingdom", latitude: 55.8642, longitude: -4.2518, why: "grey and damp" },
+    { name: "Mumbai", admin1: "Maharashtra", country: "India", latitude: 19.076, longitude: 72.877, why: "monsoon air" },
+    { name: "Taipei", admin1: "Taipei", country: "Taiwan", latitude: 25.0330, longitude: 121.5654, why: "warm and wet" },
+    { name: "Auckland", admin1: "Auckland", country: "New Zealand", latitude: -36.8485, longitude: 174.7633, why: "changeable" },
+  ],
+};
+
+const JAIPUR = POOL.hot[0];                       // demo mode always opens here
+
+const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
+/* Fisher-Yates on the three picks so the hot one is not always first. */
+function shuffled(a) {
+  const c = a.slice();
+  for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
+  return c;
+}
+const PRESETS = shuffled([pickOne(POOL.hot), pickOne(POOL.cold), pickOne(POOL.wet)])
+  .map((p) => ({ ...p, from: 0, to: 5 }));
+
+function renderEmpty(notice) {
+  sky.calm();
+  setDocMeta({}, null, []);
+  out.innerHTML = `
+    ${notice ? `<div class="notice">
+      <h2>${esc(notice.title)}</h2>
+      <p>${esc(notice.detail)}</p>
+      ${notice.action ? `<button type="button" class="err-do" id="notice-do">${esc(notice.action.label)}</button>` : ""}
+    </div>` : ""}
+    <p class="empty-lead">Every day gets a verdict, the trip gets one packing list, and if the days
+      differ enough you get told which one to spend outdoors.</p>
+    <div class="empty-label">Try one — live forecast, one click</div>
+    <div class="empty">
+      ${PRESETS.map((p, i) => {
+        const a = new Date(today.getTime() + p.from * 864e5), b = new Date(today.getTime() + p.to * 864e5);
+        return `<button class="ex" type="button" data-i="${i}">
+          <b>${esc(p.name)}</b><span>${esc(p.why)}</span>
+          <em>${esc(shortRange(a, b))}</em></button>`;
+      }).join("")}
+    </div>`;
+  const nb = document.getElementById("notice-do");
+  if (nb && notice?.action) nb.addEventListener("click", notice.action.run);
+  out.querySelectorAll(".ex").forEach((b) =>
+    b.addEventListener("click", () => {
+      const p = PRESETS[+b.dataset.i];
+      cityEl.value = p.name;
+      startEl.value = iso(new Date(today.getTime() + p.from * 864e5));
+      endEl.value = iso(new Date(today.getTime() + p.to * 864e5));
+      safeRun(p);                           // straight past the chooser — that is the trick
+    }));
+}
+
+const shortRange = (a, b) => {
+  const f = (d) => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return `${f(a)} – ${f(b)} · ${Math.round((b - a) / 864e5) + 1} days`;
+};
+
+/* The status line is tied to REAL steps, not a timer: each call happens because
+   that piece of work actually just started. A preset click skips the lookup and
+   so never shows "Finding the city" — it would be a lie about what is happening.
+   The skeletons are laid out like the results that replace them, so the page
+   does not jump when they do. */
+const LOAD_STEPS = ["find", "read", "decide"];
+
+function renderLoading(msg, step) {
+  const at = LOAD_STEPS.indexOf(step);
+  out.innerHTML = `<div class="loading" aria-busy="true">
+      <div class="loading-note" id="load-step" role="status" aria-live="polite">${esc(msg)}</div>
+      <div class="load-dots" aria-hidden="true">
+        ${LOAD_STEPS.map((_, i) => `<i class="${i <= at ? "on" : ""}"></i>`).join("")}
+      </div>
+      ${'<div class="skeleton"></div>'.repeat(3)}
+    </div>`;
+}
+
+/** Advance the line in place — no reflow, no restarted skeleton animation. */
+function loadStep(msg, step) {
+  const el = document.getElementById("load-step");
+  if (!el) return renderLoading(msg, step);
+  el.textContent = msg;
+  const at = LOAD_STEPS.indexOf(step);
+  out.querySelectorAll(".load-dots i").forEach((d, i) => d.classList.toggle("on", i <= at));
+}
+
+/* One switch for the whole form. Disabling only the button left the date inputs
+   editable mid-request, so you could change the dates the answer was about. */
+function setFormBusy(busy) {
+  [cityEl, startEl, endEl, go].forEach((el) => { el.disabled = busy; });
+  go.textContent = busy ? "Working…" : "Get the verdict";
+  form.classList.toggle("busy", busy);
+}
+
+/* Every error says three things: what went wrong, why, and ONE thing to do next
+   that is a button rather than an instruction. "Check the spelling" is advice;
+   a button that clears the field and puts the cursor in it is a next action. */
+function renderError(title, detail, hint, action) {
+  sky.stall();                              // colour drains, motion stops — the state has a mood
+  setFormBusy(false);                       // an error must never leave the form locked
+  out.innerHTML = `<div class="panel error" role="alert">
+      <div class="err-kind">${esc(action?.kind || "Problem")}</div>
+      <h2>${esc(title)}</h2>
+      <p>${esc(detail)}</p>
+      ${hint ? `<p class="err-hint">${esc(hint)}</p>` : ""}
+      ${action ? `<button type="button" class="err-do" id="err-do">${esc(action.label)}</button>` : ""}
+    </div>`;
+  const btn = document.getElementById("err-do");
+  if (btn && action) btn.addEventListener("click", action.run);
+}
+
+/** Put the cursor where the fix is. */
+function focusCity() { cityEl.focus(); cityEl.select(); }
+
+/* Ten places are called Springfield. Never silently pick one — even "New Delhi"
+   returns a second match in Illinois. Show the choice, ordered by population,
+   and say where each one is. */
+function renderChoices(results) {
+  out.innerHTML = `<div class="panel">
+      <h2>Which one?</h2>
+      <div class="h2sub">${results.length} places match that name. Largest first.</div>
+      <div id="choices"></div>
+    </div>`;
+  const box = $("#choices");
+  results.forEach((r) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "choice";
+    // Country is the thing that actually disambiguates (Delhi IN vs Delhi US),
+    // so it gets its own line rather than being tucked after the region.
+    b.innerHTML = `
+      <span class="choice-main">
+        <b>${esc(r.name)}</b>
+        <em>${esc([r.admin1, r.country].filter(Boolean).join(" · "))}</em>
+      </span>
+      <span class="choice-pop">${r.population ? fmtPop(r.population) : "small town"}</span>`;
+    b.setAttribute("aria-label",
+      `${r.name}, ${[r.admin1, r.country].filter(Boolean).join(", ")}${r.population ? `, population ${fmtPop(r.population)}` : ""}`);
+    b.addEventListener("click", () => safeRun(r));
+    box.appendChild(b);
+  });
+}
+
+function renderResults(place, days) {
+  const trip = judgeTrip(days);
+  const move = bestMove(days);            // null when a reshuffle would change nothing
+  // the sky becomes THIS trip — worst day and best day blended, never averaged
+  sky.trip(days, trip.tone === "mixed" ? "fine" : trip.tone);
+  const list = packingList(days);
+  const bag = bagLine(days);
+  const key = packKey(place, days);
+  const ticks = loadTicks(key);
+  const where = [place.name, place.admin1, place.country].filter(Boolean).join(", ");
+  setDocMeta(place, trip, days);
+
+  out.innerHTML = `
+    <section class="headline stage tone-${trip.tone}">
+      <div class="where">
+        <span>${esc(where)} · ${days.length} day${days.length === 1 ? "" : "s"}</span>
+        <span class="where-right">
+          <button type="button" class="sky-reset" id="sky-reset" hidden>Sky: <b id="sky-day"></b> · show the trip</button>
+        </span>
+      </div>
+      <p>${esc(trip.line)}</p>
+      ${move ? `<p class="move">${esc(move.line)}</p>` : ""}
+    </section>
+
+    <div class="strip stage" role="list" aria-label="Trip at a glance">${days.map((d, i) => seg(d, i === move?.outdoorIndex)).join("")}</div>
+    ${curve(days)}
+
+    <div class="section-head"><h2>Day by day</h2>
+      <div class="h2sub">Verdict first. The numbers are underneath if you want them.</div></div>
+    <div class="rail">
+      <div class="days" id="rail" role="list" tabindex="0" aria-label="Day by day, scrollable">${days.map(dayCard).join("")}</div>
+    </div>
+
+    <div class="section-head"><h2>Pack this</h2>
+      <div class="h2sub">One list for the whole trip, already deduplicated.</div></div>
+    <div class="pack-panel">
+      <div class="pack-why">${esc(bag || "")}</div>
+      <div class="pack-modes" role="group" aria-label="Bag size">
+        <button type="button" class="mode on" data-mode="full">Full bag</button>
+        <button type="button" class="mode" data-mode="carry">Carry-on only</button>
+        <span class="mode-why" id="mode-why"></span>
+      </div>
+      <div class="pack-progress">
+        <div class="bar"><i id="pack-bar"></i></div>
+        <span class="mono" id="pack-count"></span>
+      </div>
+      <div id="pack-body"></div>
+      <div class="pack-foot">
+        <button type="button" class="copy" id="copy-pack">Copy packing list</button>
+        <span class="copy-note" id="copy-note" role="status" aria-live="polite"></span>
+      </div>
+    </div>`;
+  // Staging is a nicety; content is not. If anything here throws, show it all.
+  try { runReveal(out, days); }
+  catch { out.querySelectorAll(".stage,.seg,.day,.curve,.pack-panel,.section-head").forEach((el) => el.classList.add("in")); }
+
+  /* ══ RAIL CONTROL ═══════════════════════════════════════════════════════
+     Scrolling the rail is a first-class way to move through the trip: it lights
+     the matching strip segment and morphs the sky to that day, exactly as
+     tapping the strip does. Debounced to snap settle so a fast swipe fires once
+     at the end, not forty times on the way. */
+  const rail = out.querySelector("#rail");
+  const dayEls = [...out.querySelectorAll(".day")];
+  let railLock = 0;                    // suppresses feedback while WE scroll it
+
+  function scrollRailTo(i) {
+    const card = dayEls[i];
+    if (!card || !rail) return;
+    railLock = Date.now() + 700;
+    const to = card.offsetLeft - (rail.clientWidth - card.offsetWidth) / 2;
+    rail.scrollTo({ left: to, behavior: REDUCE ? "auto" : "smooth" });
+  }
+
+  function centredIndex() {
+    if (!rail) return 0;
+    const mid = rail.scrollLeft + rail.clientWidth / 2;
+    let best = 0, bestD = Infinity;
+    dayEls.forEach((c, i) => {
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  }
+
+  /* Safari and Firefox get the focus effect from here instead of a scroll
+     timeline. Threshold-based rather than "most visible" so a half-scrolled
+     rail still nominates exactly one card. */
+  if (rail && !CSS.supports("animation-timeline", "view(inline)")) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) e.target.classList.toggle("centred", e.intersectionRatio > 0.75);
+    }, { root: rail, threshold: [0, 0.75, 1] });
+    dayEls.forEach((c) => io.observe(c));
+  }
+
+  /** Where the rail sits between days, as a fraction: 2.4 = 40% past day 2. */
+  function centredFraction() {
+    if (!rail || dayEls.length < 2) return 0;
+    const mid = rail.scrollLeft + rail.clientWidth / 2;
+    const mid0 = dayEls[0].offsetLeft + dayEls[0].offsetWidth / 2;
+    if (mid <= mid0) return 0;
+    for (let i = 0; i < dayEls.length - 1; i++) {
+      const a = dayEls[i].offsetLeft + dayEls[i].offsetWidth / 2;
+      const b = dayEls[i + 1].offsetLeft + dayEls[i + 1].offsetWidth / 2;
+      if (mid < b) return i + (mid - a) / (b - a);
+    }
+    return dayEls.length - 1;
+  }
+
+  let frameQueued = false;
+  function trackSky() {
+    frameQueued = false;
+    if (REDUCE || Date.now() < railLock) return;   // our own scroll, or motion is off
+    const f = centredFraction();
+    const i = Math.max(0, Math.min(days.length - 2, Math.floor(f)));
+    sky.follow(days[i], days[i + 1], Math.max(0, Math.min(1, f - i)));
+  }
+
+  let settle;
+  rail?.addEventListener("scroll", () => {
+    if (!frameQueued) { frameQueued = true; requestAnimationFrame(trackSky); }
+    clearTimeout(settle);
+    settle = setTimeout(() => {
+      if (Date.now() < railLock) return;     // this scroll was ours, not the user's
+      const i = centredIndex();
+      if (i !== preview) showDay(i, out.querySelectorAll(".seg")[i], { fromRail: true });
+    }, 170);
+  }, { passive: true });
+
+  rail?.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const step = e.key === "ArrowRight" ? 1 : -1;
+    scrollRailTo(Math.min(dayEls.length - 1, Math.max(0, centredIndex() + step)));
+  });
+
+  /* THE COUPLING. Tapping a day in the strip morphs the sky to that day's real
+     numbers in under 400ms and holds the card lit while you look at it. The sky
+     is the forecast, so it has to be able to show one day as readily as the
+     week. Tapping the headline — or Escape — puts the whole trip back. */
+  const headlineEl = out.querySelector(".headline");
+  const resetBtn = out.querySelector("#sky-reset");
+  const dayLabel = out.querySelector("#sky-day");
+  let preview = null;
+
+  function clearMarks() {
+    out.querySelectorAll(".day.lit").forEach((el) => el.classList.remove("lit"));
+    out.querySelectorAll(".seg.on").forEach((el) => el.classList.remove("on"));
+  }
+  function showTrip() {
+    if (preview === null) return;
+    preview = null;
+    clearMarks();
+    sky.restore();
+    if (resetBtn) resetBtn.hidden = true;
+    headlineEl?.classList.remove("previewing");
+  }
+  function showDay(i, seg, { fromRail = false } = {}) {
+    preview = i;
+    clearMarks();
+    seg?.classList.add("on");
+    /* Settling from a drag must EASE onto the exact day, not snap to it. Calling
+       follow(d, d, 0) collapsed the two-day palette blend to one tone in a
+       single frame — measured as a 54% colour jump in the middle of a swipe.
+       sky.day() hands the palette back to the normal crossfade, so it glides. */
+    if (fromRail && !REDUCE) sky.day(days[i], 190);
+    else sky.day(days[i]);
+    const card = dayEls[i];
+    if (card) {
+      card.classList.add("lit");        // held, not a flash — it stays while the sky is its
+      if (!fromRail) scrollRailTo(i);   // the rail is already there if it started this
+    }
+    if (resetBtn && dayLabel) { dayLabel.textContent = days[i].label; resetBtn.hidden = false; }
+    headlineEl?.classList.add("previewing");
+  }
+
+  out.querySelectorAll(".seg").forEach((b, i) => b.addEventListener("click", () => {
+    if (preview === i) showTrip();      // tapping the same day again is the way back too
+    else showDay(i, b);
+  }));
+
+  headlineEl?.addEventListener("click", (e) => {
+    showTrip();
+  });
+  out.addEventListener("keydown", (e) => { if (e.key === "Escape") showTrip(); });
+
+  /* ── PACKING ──────────────────────────────────────────────────────────────
+     A packing slip, not a todo app. Items are chips on a soft surface; ticking
+     one moves it out of its group and into the Packed tray, so the list you are
+     still working from shrinks as you go. No checkboxes anywhere.
+     Ticks are keyed per trip and survive the mode switch, because carry-on and
+     full bag are two views of the same bag, not two different bags. */
+  const bodyEl = out.querySelector("#pack-body");
+  const barEl = out.querySelector("#pack-bar");
+  const countEl = out.querySelector("#pack-count");
+  const modeWhy = out.querySelector("#mode-why");
+  let mode = "full";
+
+  /* Two shelves, not per-day metadata on every row.
+     Most of the signal is simply "is this always in the bag, or is it here
+     because of one bad day?" — so that becomes the structure. The base kit
+     carries NO annotation, because "every day" is the whole story; only the
+     conditional shelf explains itself, and it does so in words. A row of 4px
+     dots was unreadable at any size. */
+  const SHORT = (i) => new Date(days[i].date + "T00:00:00")
+    .toLocaleDateString(undefined, { weekday: "short" });
+
+  function dayText(on) {
+    if (on.length === days.length) return "every day";
+    if (on.length === 1) return `${SHORT(on[0])} only`;
+    if (on.length === 2) return `${SHORT(on[0])} + ${SHORT(on[1])}`;
+    return `${on.length} of ${days.length} days`;
+  }
+
+  const GROUP_RANK = { Wear: 0, Carry: 1, Protect: 2 };
+  const byGroup = (a, b) => (GROUP_RANK[a.group] ?? 9) - (GROUP_RANK[b.group] ?? 9)
+    || b.on.length - a.on.length || a.item.localeCompare(b.item);
+
+  const chip = (p, withDays) => `<button type="button" class="chip-item${p.essential ? " key" : ""}"
+      data-item="${esc(p.item)}" data-on="${p.on.join(",")}" aria-pressed="false">
+      <span class="chip-lbl">${esc(p.item)}</span>
+      ${withDays && p.on.length < days.length ? `<span class="chip-when">${esc(dayText(p.on))}</span>` : ""}
+    </button>`;
+
+  const packedChip = (p) => `<button type="button" class="chip-item packed" data-item="${esc(p.item)}"
+      data-on="${p.on.join(",")}" aria-pressed="true"><span class="chip-lbl">${esc(p.item)}</span></button>`;
+
+  function activeList() {
+    if (mode !== "carry") return list;
+    return carryOnList(list, days) || list;
+  }
+
+  function shelf(title, hint, items, withDays) {
+    if (!items.length) return "";
+    return `<div class="shelf">
+      <div class="shelf-head"><h3>${title}</h3><em>${hint}</em></div>
+      <div class="chip-wall">${items.map((p) => chip(p, withDays)).join("")}</div>
+    </div>`;
+  }
+
+  function renderPack() {
+    const active = activeList();
+    const carryFailed = mode === "carry" && !carryOnList(list, days);
+    const packed = active.filter((p) => ticks.has(p.item));
+    const todo = active.filter((p) => !ticks.has(p.item)).sort(byGroup);
+    /* The split is "base kit" vs "one-off", NOT "every single day" vs the rest.
+       Measured against live forecasts, almost nothing is needed on literally
+       every day of a mixed trip — Reykjavik's most-used item covers 4 of 6 —
+       so an "always" shelf would have sat empty on most searches. Essential
+       Nor can it use `essential`: that flag ORs in "forced by a rough day", and
+       on a mostly-rough trip every single item qualifies — Reykjavik put all 8
+       in the base kit and left the second shelf empty. The shelf split is about
+       RECURRENCE; severity is what the type weight already carries. */
+    const half = Math.ceil(days.length / 2);
+    const always = todo.filter((p) => p.on.length >= half);
+    const sometimes = todo.filter((p) => p.on.length < half);
+
+    modeWhy.textContent = mode === "carry"
+      ? (carryFailed ? "Every item here earns its place across the trip — this is already the small bag."
+                     : "Cut to what recurs — plus anything a hostile day forces.")
+      : "";
+
+    bodyEl.innerHTML = `
+      ${shelf("The base kit", "carried most of the trip", always, true)}
+      ${shelf("Just for certain days", "point at one to find it on the strip", sometimes, true)}
+      ${packed.length ? `<div class="shelf tray">
+          <div class="shelf-head"><h3>Packed</h3><em>${packed.length} in the bag</em></div>
+          <div class="chip-wall">${packed.map(packedChip).join("")}</div>
+        </div>` : ""}
+      ${!todo.length && packed.length ? `<p class="all-packed">That is the whole bag. Nothing left out.</p>` : ""}`;
+
+    const pct = active.length ? Math.round((packed.length / active.length) * 100) : 0;
+    barEl.style.width = pct + "%";
+    countEl.textContent = `${packed.length} of ${active.length} packed`;
+
+    const segs = [...out.querySelectorAll(".seg")];
+    const highlight = (on) => {
+      const set = new Set(on);
+      segs.forEach((s, i) => { s.classList.toggle("hi", set.has(i)); s.classList.toggle("dim", !set.has(i)); });
+    };
+    const clearHighlight = () => segs.forEach((s) => s.classList.remove("hi", "dim"));
+
+    bodyEl.querySelectorAll(".chip-item").forEach((el) => {
+      const on = (el.dataset.on || "").split(",").filter((x) => x !== "").map(Number);
+      el.addEventListener("click", () => {
+        const item = el.dataset.item;
+        if (ticks.has(item)) ticks.delete(item); else ticks.add(item);
+        saveTicks(key, ticks);
+        clearHighlight();
+        renderPack();
+      });
+      // Point at an item and its days light up ON THE STRIP — a far better link
+      // than a dot you have to squint at, and it reuses a thing already on screen.
+      if (on.length && on.length < days.length) {
+        el.addEventListener("pointerenter", () => highlight(on));
+        el.addEventListener("focus", () => highlight(on));
+        el.addEventListener("pointerleave", clearHighlight);
+        el.addEventListener("blur", clearHighlight);
+      }
+    });
+
+    // the day text itself jumps the rail to the first such day
+    bodyEl.querySelectorAll(".chip-when").forEach((w) => {
+      w.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const on = (w.closest(".chip-item").dataset.on || "").split(",").map(Number);
+        if (Number.isInteger(on[0])) scrollRailTo(on[0]);
+      });
+    });
+  }
+
+  out.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    out.querySelectorAll(".mode").forEach((x) => x.classList.toggle("on", x === b));
+    renderPack();
+  }));
+
+  renderPack();
+
+  /* Plain text for WhatsApp or Notes — no markdown, no box-drawing, nothing that
+     renders as literal asterisks in a chat window. Ticked items are marked, not
+     dropped: you may be sending this to whoever is packing the other half. */
+  const copyBtn = $("#copy-pack"), note = $("#copy-note");
+  if (copyBtn) copyBtn.addEventListener("click", async () => {
+    const lines = [`${where} — ${days.length} day${days.length === 1 ? "" : "s"}`, ""];
+    if (bag) lines.push(bag, "");
+    for (const g of groupPacking(activeList())) {
+      lines.push(`${g.group.toUpperCase()}:`);
+      for (const p of g.items) {
+        lines.push(`${ticks.has(p.item) ? "[x]" : "[ ]"} ${p.item} (${p.days}/${days.length} days)`);
+      }
+      lines.push("");
+    }
+    const text = lines.join("\n").trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      note.textContent = "Copied.";
+    } catch {
+      // clipboard API needs https + permission; fall back rather than fail silently
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch {}
+      ta.remove();
+      note.textContent = ok ? "Copied." : "Press ⌘C / Ctrl+C to copy.";
+      if (!ok) { const t2 = document.createElement("textarea"); t2.className = "copy-fallback"; t2.value = text;
+        copyBtn.parentElement.appendChild(t2); t2.select(); }
+    }
+    setTimeout(() => { note.textContent = ""; }, 2400);
+  });
+}
+
+/** One segment of the trip strip. */
+function seg(d, isOutdoor) {
+  const t = d.feels != null ? `${Math.round(d.feels)}°` : "–";
+  const day = new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "narrow" });
+  const far = d.certainty === "distant" || d.certainty === "provisional";
+  return `<button type="button" class="seg s-${d.band}${isOutdoor ? " pick" : ""}${far ? " far" : ""}" role="listitem"
+    aria-label="${esc(d.label)}: ${esc(d.verdict)}${isOutdoor ? ". Suggested outdoor day." : ""}"
+    title="${esc(d.label)} — ${esc(d.verdict)}">
+    <strong>${t}</strong><small>${esc(day)}</small></button>`;
+}
+
+/** Feels-like across the trip, as a shape rather than a column of numbers. */
+/* The feels-like curve.
+   preserveAspectRatio="none" stretches the viewBox to fill the box, and the box
+   is far wider than it is tall — so x was scaled roughly twice as hard as y.
+   Every circle came out an ellipse and every join looked chewed; that is what
+   read as pixelation. The fix is to stop drawing round things in a squashed
+   coordinate space: the SVG keeps only the area and the line (with a
+   non-scaling stroke), and the points are HTML dots positioned in percentages,
+   so they stay perfectly round at any width. */
+function curve(days) {
+  const pts = days.map((d) => d.feels).filter((v) => v != null);
+  if (pts.length < 2) return "";
+  const W = 100, H = 26, pad = 2.5;
+  const lo = Math.min(...pts), hi = Math.max(...pts), span = Math.max(hi - lo, 4);
+  const xy = days.map((d, i) => {
+    const x = days.length === 1 ? W / 2 : (i / (days.length - 1)) * W;
+    const y = d.feels == null ? H / 2 : H - pad - ((d.feels - lo) / span) * (H - pad * 2);
+    return [x, y];
+  });
+
+  // A smooth cardinal spline instead of straight segments — the temperature
+  // between two days is a curve, not a corner.
+  const sm = (p) => {
+    if (p.length < 3) return p.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+    let d = `M${p[0][0].toFixed(2)},${p[0][1].toFixed(2)}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`;
+    }
+    return d;
+  };
+  const line = sm(xy);
+  const area = `${line} L${W},${H} L0,${H} Z`;
+
+  const dots = xy.map(([x, y], i) => {
+    const band = days[i].band === "unknown" ? "ink-3" : days[i].band;
+    return `<span class="cdot" style="left:${x.toFixed(2)}%;top:${(y / H * 100).toFixed(2)}%;
+      --c:var(--${band});--i:${i}" title="${esc(days[i].label)}"></span>`;
+  }).join("");
+
+  return `<div class="curve"><div class="cap">Feels like · ${Math.round(lo)}° to ${Math.round(hi)}°</div>
+    <div class="cwrap">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity=".30"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <path class="carea" d="${area}" fill="url(#cg)"/>
+      <path class="cline" d="${line}" pathLength="1" fill="none" stroke="var(--accent)" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <!-- a short bright segment that runs the length of the line, forever -->
+      <path class="cspark" d="${line}" pathLength="1" fill="none" stroke="var(--accent)" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    </svg>${dots}</div></div>`;
+}
+
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ----------------------------------------------------------------------------
+   ONE TIMELINE. The order is the product: you see the weather, then the shape
+   of the trip, then the sentence that explains it, then the detail. Detail must
+   never land before the headline, so the day cards are held back explicitly
+   rather than trusting CSS delays to stay in sync.
+   -------------------------------------------------------------------------- */
+function runReveal(root, days) {
+  const strip = root.querySelector(".strip");
+  const head = root.querySelector(".headline");
+  const segs = [...root.querySelectorAll(".seg")];
+  const cards = [...root.querySelectorAll(".day")];
+  const quiet = [...root.querySelectorAll(".curve, .pack-panel, .section-head")];
+
+  if (REDUCE) {                       // no staging at all — everything at once
+    [strip, head, ...segs, ...cards, ...quiet].forEach((el) => el?.classList.add("in"));
+    return;
+  }
+
+  // Long trips must not drag the punchline out — the strip always finishes in
+  // roughly the same beat whether it is 3 days or 14.
+  const SEG_STEP = Math.min(62, Math.max(22, Math.round(420 / Math.max(segs.length, 1))));
+  const stripDone = 140 + segs.length * SEG_STEP;       // when the shape is complete
+  const headAt = stripDone + 130;                       // punchline lands after the shape
+  const cardsAt = headAt + 330;                         // detail only after the sentence
+
+  segs.forEach((s, i) => (s.style.animationDelay = `${140 + i * SEG_STEP}ms`));
+  strip?.classList.add("in");
+  setTimeout(() => head?.classList.add("in"), headAt);
+
+  // the worst day pulses once the shape is finished — no text, just the eye landing
+  const rank = { hostile: 3, caution: 2, fine: 1, good: 0, unknown: -1 };
+  let worst = -1, worstRank = 0;
+  days.forEach((d, i) => { const r = rank[d.band] ?? 0; if (r > worstRank) { worstRank = r; worst = i; } });
+  if (worst >= 0) setTimeout(() => segs[worst]?.classList.add("worst"), stripDone + 40);
+
+  cards.forEach((c, i) => setTimeout(() => c.classList.add("in"), cardsAt + Math.min(i * 55, 480)));
+  quiet.forEach((q, i) => setTimeout(() => q.classList.add("in"), cardsAt + 90 + i * 70));
+
+  // Failsafe: a dropped frame or a backgrounded tab must never leave the page
+  // half-revealed. Everything is visible by 2.6s no matter what.
+  setTimeout(() => root.querySelectorAll(".stage,.seg,.day,.curve,.pack-panel,.section-head")
+    .forEach((el) => el.classList.add("in")), 2600);
+}
+
+function dayCard(d) {
+  const label = { good: "Good", fine: "Fine", caution: "Plan around it", hostile: "Rough", unknown: "No data" }[d.band];
+  const far = d.certainty === "distant" || d.certainty === "provisional";
+  const ghost = new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "narrow" });
+
+  /* One number is allowed to be big, and it is feels-like — the figure every
+     threshold on this page is derived from. The rest become gauges: a label, a
+     value, and a bar on a fixed scale. The bar only takes the day's colour once
+     it crosses that signal's threshold, so the eye lands on the actual problem
+     without reading a single digit. The old mono row printed all five numbers
+     at equal weight in the lowest-contrast text on the card. */
+  const gauge = (name, val, unit, frac, over) => {
+    const has = val != null;
+    const pct = has ? Math.max(3, Math.min(100, frac * 100)) : 0;
+    return `<div class="g${over ? " over" : ""}">
+      <span class="gl">${name}</span>
+      <span class="gv">${has ? val : "—"}${has && unit ? `<i>${unit}</i>` : ""}</span>
+      <span class="gb"><b style="width:${pct.toFixed(0)}%"></b></span>
+    </div>`;
+  };
+
+  const gauges = [
+    gauge("Rain", d.mm != null ? d.mm.toFixed(1) : null, "mm", (d.mm ?? 0) / 20, (d.mm ?? 0) >= T.RAIN_SUM_NOTICEABLE),
+    gauge("Chance", d.prob != null ? Math.round(d.prob) : null, "%", (d.prob ?? 0) / 100, (d.prob ?? 0) >= T.RAIN_PROB_LIKELY),
+    gauge("UV", d.uv != null ? d.uv.toFixed(1) : null, "", (d.uv ?? 0) / 12, (d.uv ?? 0) >= T.UV_HIGH),
+    gauge("Wind", d.wind != null ? Math.round(d.wind) : null, "km/h", (d.wind ?? 0) / 60, (d.wind ?? 0) >= T.WIND_NOTICEABLE),
+  ].join("");
+
+  return `<article class="day b-${d.band}${far ? " far" : ""}" role="listitem" aria-label="${esc(d.label)}">
+     <div class="day-card">
+      <span class="day-ghost" aria-hidden="true">${esc(ghost)}</span>
+      <div class="day-top">
+        <span class="date">${esc(d.label)}</span>
+        <span class="day-tags">
+          ${far ? `<span class="far-tag" title="Day ${d.age} of the forecast — accuracy drops past a week">less certain</span>` : ""}
+          <span class="chip c-${d.band}">${label}</span>
+        </span>
+      </div>
+
+      <div class="anchor">
+        <span class="feels">${d.feels != null ? Math.round(d.feels) + "°" : "—"}</span>
+        <span class="anchor-side">
+          <span class="anchor-lab">feels like</span>
+          ${d.min != null ? `<span class="anchor-low">${Math.round(d.min)}° overnight</span>` : ""}
+        </span>
+      </div>
+
+      <p class="verdict">${esc(d.verdict)}</p>
+      ${d.also.length ? `<ul class="also">${d.also.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+
+      <div class="gauges">${gauges}</div>
+     </div>
+    </article>`;
+}
+
+/* ---------------- data ---------------- */
+async function getJSON(url, what) {
+  let res;
+  try { res = await fetch(url); }
+  catch { throw new AppError("Could not reach the weather service", "Your connection dropped, or Open-Meteo is unreachable from here.", "Check your connection and try again."); }
+  if (!res.ok) throw new AppError(`${what} failed`, `The service replied ${res.status}.`, "This is usually temporary — try again in a moment.");
+  try { return await res.json(); }
+  catch { throw new AppError(`${what} returned something unreadable`, "The response was not valid JSON.", "Try again in a moment."); }
+}
+
+class AppError extends Error {
+  /** `action` lets a thrower supply the RIGHT next step. A date-range failure
+      offering "Try again" would just fail again; it needs "fix the dates". */
+  constructor(title, detail, hint, action) {
+    super(title); this.title = title; this.detail = detail; this.hint = hint; this.action = action;
+  }
+}
+
+/* runForecast is also reached from the chooser and the demo presets, both of
+   which sit outside handleSubmit's try/catch. Without this an offline click
+   would leave the loading skeleton spinning forever on an unhandled rejection. */
+async function safeRun(place) {
+  setFormBusy(true);
+  try { await runForecast(place); }
+  catch (err) {
+    const retry = { kind: "Service", label: "Try again", run: () => safeRun(place) };
+    if (err instanceof AppError) renderError(err.title, err.detail, err.hint, err.action || retry);
+    else renderError("Something went wrong", String(err && err.message || err),
+      "This one is on us — the details above are what the page actually saw.", retry);
+  } finally { setFormBusy(false); }
+}
+
+async function runForecast(place) {
+  // A preset or a chooser click arrives here without a lookup, so this is the
+  // first step it shows. Saying "Finding the city" would be a lie.
+  if (document.getElementById("load-step")) loadStep(`Reading the forecast for ${place.name}…`, "read");
+  else renderLoading(`Reading the forecast for ${place.name}…`, "read");
+  const p = new URLSearchParams({
+    latitude: place.latitude, longitude: place.longitude,
+    daily: "temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_probability_max,precipitation_sum,snowfall_sum,weather_code,uv_index_max,wind_speed_10m_max",
+    timezone: "auto", start_date: startEl.value, end_date: endEl.value,
+  });
+  const data = await getJSON(`https://api.open-meteo.com/v1/forecast?${p}`, "Forecast");
+  if (data.error) throw new AppError("Those dates are outside the forecast",
+    String(data.reason || "The weather service rejected that range."),
+    `Open-Meteo only publishes about a fortnight ahead. The furthest I can read is ${prettyDate(iso(maxDate))}.`,
+    { kind: "Dates", label: `End on ${prettyDate(iso(maxDate))}`, run: () => {
+        endEl.value = iso(maxDate);
+        if (startEl.value > endEl.value) startEl.value = iso(today);
+        form.requestSubmit();
+      } });
+
+  const dl = data.daily;
+  if (!dl || !Array.isArray(dl.time) || !dl.time.length)
+    throw new AppError("No forecast for those dates",
+      "The service accepted the request but returned no days.",
+      "This usually means the range sits at the edge of what it publishes.",
+      { kind: "Dates", label: "Use the next 5 days", run: () => {
+          startEl.value = iso(today);
+          endEl.value = iso(new Date(today.getTime() + 4 * 864e5));
+          form.requestSubmit();
+        } });
+
+  loadStep("Deciding what it means…", "decide");
+  const days = dl.time.map((date, i) => {
+    const j = judgeDay({
+      temperature_2m_max: dl.temperature_2m_max?.[i],
+      temperature_2m_min: dl.temperature_2m_min?.[i],
+      apparent_temperature_max: dl.apparent_temperature_max?.[i],
+      precipitation_probability_max: dl.precipitation_probability_max?.[i],
+      precipitation_sum: dl.precipitation_sum?.[i],
+      snowfall_sum: dl.snowfall_sum?.[i],
+      weather_code: dl.weather_code?.[i],
+      uv_index_max: dl.uv_index_max?.[i],
+      wind_speed_10m_max: dl.wind_speed_10m_max?.[i],
+    });
+    return { ...j, date, label: prettyDate(date) };
+  });
+  // tag distance, and soften only the sentences that warrant it
+  renderResults(place, withTripCertainty(days));
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  try { return await submitInner(); }
+  catch (err) { lastResort("Form", err); }
+}
+
+async function submitInner() {
+  const city = cityEl.value.trim();
+  const s = startEl.value, en = endEl.value;
+
+  /* Input validation. Each case is its OWN message — "invalid input" tells you
+     nothing about which of five things you got wrong — and each offers a button
+     that performs the fix rather than describing it. Every path returns, so no
+     bad input can reach the network or white-screen the page. */
+  const useDefaultDates = {
+    kind: "Dates", label: `Use the next 5 days`, run: () => {
+      startEl.value = iso(today);
+      endEl.value = iso(new Date(today.getTime() + 4 * 864e5));
+      form.requestSubmit();
+    },
+  };
+
+  if (!city) return renderError("No city yet",
+    "Type where you are going and I will fetch the forecast for it.",
+    "Two-word names like New Delhi work fine.",
+    { kind: "City", label: "Type a city", run: focusCity });
+
+  if (city.length < 2) return renderError("That city name is too short",
+    `“${city}” is a single character, which matches thousands of places.`,
+    "Enter at least two characters.",
+    { kind: "City", label: "Edit the city", run: focusCity });
+
+  if (!s || !en) return renderError("Dates missing",
+    "Pick a first and last day so I know how much forecast to read.", "",
+    useDefaultDates);
+
+  if (en < s) return renderError("Those dates are back to front",
+    `The last day (${prettyDate(en)}) is before the first (${prettyDate(s)}).`,
+    "Swap them, or start again from today.",
+    { kind: "Dates", label: "Swap the dates", run: () => {
+        const a = startEl.value; startEl.value = endEl.value; endEl.value = a;
+        form.requestSubmit();
+      } });
+
+  if (new Date(s) < new Date(iso(today))) return renderError("That start date is in the past",
+    "This is a forecast, not a history lookup — there is nothing to predict about a day that already happened.",
+    "Pick today or later.", useDefaultDates);
+
+  const span = Math.round((new Date(en) - new Date(s)) / 864e5) + 1;
+
+  if (new Date(en) > maxDate) return renderError("That last day is beyond the forecast",
+    `Open-Meteo stops around a fortnight out, so the cap here is ${MAX_DAYS_AHEAD} days from today.`,
+    `The furthest I can read is ${prettyDate(iso(maxDate))}.`,
+    { kind: "Dates", label: `End on ${prettyDate(iso(maxDate))}`, run: () => {
+        endEl.value = iso(maxDate);
+        if (startEl.value > endEl.value) startEl.value = iso(today);
+        form.requestSubmit();
+      } });
+
+  if (span > MAX_DAYS_AHEAD) return renderError("That range is too long",
+    `${span} days requested; the cap is ${MAX_DAYS_AHEAD}. Past that the later days are guesswork presented as fact.`,
+    "Shorten it and the verdicts stay worth reading.",
+    { kind: "Dates", label: `Trim to ${MAX_DAYS_AHEAD} days`, run: () => {
+        endEl.value = iso(new Date(new Date(s).getTime() + (MAX_DAYS_AHEAD - 1) * 864e5));
+        form.requestSubmit();
+      } });
+
+  setFormBusy(true);
+  try {
+    // Picked from the dropdown? The place is already resolved — no second lookup.
+    if (chosen && chosen.name.toLowerCase() === city.toLowerCase()) {
+      await runForecast(chosen);
+      return;
+    }
+    renderLoading(`Finding ${city}…`, "find");
+    const geo = await getJSON(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json`,
+      "City lookup");
+
+    // A nonsense city returns an object with no `results` key at all.
+    const results = Array.isArray(geo.results) ? geo.results : [];
+    if (!results.length) return renderError(`No city called “${city}”`,
+      "The place lookup returned nothing for that name.",
+      "Check the spelling, or try the nearest larger city — small villages often are not listed.",
+      { kind: "City not found", label: "Try another city", run: focusCity });
+
+    if (results.length === 1) await runForecast(results[0]);
+    else renderChoices(results.slice().sort((a, b) => (b.population || 0) - (a.population || 0)));
+  } catch (err) {
+    const retry = { kind: "Service", label: "Try again", run: () => form.requestSubmit() };
+    if (err instanceof AppError) renderError(err.title, err.detail, err.hint, err.action || retry);
+    else renderError("Something went wrong", String(err && err.message || err),
+      "This one is on us — the details above are what the page actually saw.", retry);
+  } finally { setFormBusy(false); }
+}
+
+/* ---------------- helpers ---------------- */
+function prettyDate(d) {
+  const dt = new Date(d + "T00:00:00");
+  return dt.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+function fmtPop(n) { return n >= 1e6 ? `${(n / 1e6).toFixed(1)}M people` : n >= 1e3 ? `${Math.round(n / 1e3)}k people` : `${n} people`; }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* ---------------- typeahead ----------------
+   Suggestions come from the same geocoding endpoint, debounced. Picking one
+   here settles the ambiguity BEFORE searching, so "Springfield" is resolved by
+   the user rather than guessed by us. Typing free text still works — the
+   chooser screen is the fallback. */
+const ac = document.getElementById("ac");
+let acItems = [], acIndex = -1, acTimer = 0, acSeq = 0, chosen = null;
+
+function closeAc() { ac.hidden = true; ac.innerHTML = ""; acItems = []; acIndex = -1; cityEl.setAttribute("aria-expanded", "false"); }
+
+function paintAc() {
+  if (!acItems.length) return closeAc();
+  ac.innerHTML = acItems.map((r, i) => `
+    <li role="option" id="ac-${i}" aria-selected="${i === acIndex}">
+      <span style="min-width:0"><b>${esc(r.name)}</b><em>${esc([r.admin1, r.country].filter(Boolean).join(", "))}</em></span>
+      <span>${r.population ? fmtPop(r.population) : "small town"}</span>
+    </li>`).join("");
+  ac.hidden = false;
+  cityEl.setAttribute("aria-expanded", "true");
+  [...ac.children].forEach((li, i) => li.addEventListener("mousedown", (e) => { e.preventDefault(); pick(i); }));
+}
+
+function pick(i) {
+  const r = acItems[i]; if (!r) return;
+  chosen = r;
+  cityEl.value = r.name;
+  closeAc();
+  form.requestSubmit();
+}
+
+async function suggest(q) {
+  const seq = ++acSeq;
+  try {
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+    if (!res.ok) return;
+    const j = await res.json();
+    if (seq !== acSeq) return;                       // a newer keystroke won
+    acItems = (Array.isArray(j.results) ? j.results : [])
+      .sort((a, b) => (b.population || 0) - (a.population || 0));
+    acIndex = -1;
+    if (!acItems.length) { ac.innerHTML = `<li class="hint">No city matches “${esc(q)}”</li>`; ac.hidden = false; return; }
+    paintAc();
+  } catch { /* typeahead is a convenience — never let it break the form */ }
+}
+
+cityEl.addEventListener("input", () => {
+  chosen = null;
+  const q = cityEl.value.trim();
+  clearTimeout(acTimer);
+  if (q.length < 2) return closeAc();
+  acTimer = setTimeout(() => suggest(q), 180);       // debounce: one call per pause, not per keystroke
+});
+
+cityEl.addEventListener("keydown", (e) => {
+  if (ac.hidden || !acItems.length) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); acIndex = (acIndex + 1) % acItems.length; paintAc(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); acIndex = (acIndex - 1 + acItems.length) % acItems.length; paintAc(); }
+  else if (e.key === "Enter" && acIndex >= 0) { e.preventDefault(); pick(acIndex); }
+  else if (e.key === "Escape") closeAc();
+});
+cityEl.addEventListener("blur", () => setTimeout(closeAc, 120));
+
+form.addEventListener("submit", handleSubmit);
+/* Last resort. Every known failure is already caught and given its own panel;
+   this exists so that an UNKNOWN one still produces a readable page instead of
+   a white screen. It reports what actually happened rather than inventing a
+   friendly lie, because at this point we genuinely do not know what broke. */
+function lastResort(what, err) {
+  try {
+    setFormBusy(false);
+    renderError("Something went wrong", `${what}: ${String(err && err.message || err)}`,
+      "This is a bug in the page, not in your input. Reloading usually clears it.",
+      { kind: "Unexpected", label: "Reload the page", run: () => location.reload() });
+  } catch { /* if even this fails, the browser console is the only honest place left */ }
+}
+addEventListener("error", (e) => {
+  // Resource load failures (a font that did not arrive) must NOT wipe good
+  // results off the screen. Only genuine script errors reach the panel.
+  if (e.target && e.target !== window) return;
+  if (!e.error && !e.message) return;
+  lastResort("Script error", e.error || e.message);
+});
+addEventListener("unhandledrejection", (e) => lastResort("Unhandled promise", e.reason));
+
+const DEFAULT_TITLE = document.title;
+const DEFAULT_DESC = "A verdict for each day and one packing list — not a wall of numbers.";
+
+/** Title and social tags follow the verdict, so a pasted link reads as a verdict. */
+function setDocMeta(place, trip, days) {
+  const where = [place.name, place.country].filter(Boolean).join(", ");
+  const title = trip ? `${where} — ${trip.line}` : DEFAULT_TITLE;
+  document.title = trip ? (title.length > 105 ? title.slice(0, 102).trimEnd() + "…" : title) : DEFAULT_TITLE;
+  const desc = trip
+    ? `${days.length} day${days.length === 1 ? "" : "s"} in ${where}. ${trip.line}`
+    : DEFAULT_DESC;
+  const set = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute("content", val); };
+  set('meta[name="description"]', desc);
+  set('meta[property="og:title"]', document.title);
+  set('meta[property="og:description"]', desc);
+  set('meta[name="twitter:title"]', document.title);
+  set('meta[name="twitter:description"]', desc);
+}
+
+/* ?demo=1 — for screen recordings. Fills in Jaipur and the next five valid days
+   and runs it, so a demo never opens with someone mistyping a city name. The
+   forecast is still fetched live; the only thing skipped is the typing. */
+function maybeDemo() {
+  let wants = false;
+  try { wants = new URLSearchParams(location.search).get("demo") === "1"; } catch { return false; }
+  if (!wants) return false;
+  const p = { ...JAIPUR, from: 0, to: 5 };
+  cityEl.value = p.name;
+  startEl.value = iso(today);
+  endEl.value = iso(new Date(today.getTime() + 4 * 864e5));   // today + 4 = 5 days, always in range
+  safeRun(p);
+  return true;
+}
+
+if (!maybeDemo()) renderEmpty();
+</script>
+</body>
+</html>
